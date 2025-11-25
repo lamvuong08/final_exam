@@ -16,7 +16,6 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
 
-    // --- Các API cũ: GIỮ NGUYÊN ---
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserDTO userDTO) {
         try {

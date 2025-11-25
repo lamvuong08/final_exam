@@ -139,15 +139,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 usernameOrEmail: _emailController.text.trim(),
                                 password: _passwordController.text.trim(),
                               );
+                              if (!context.mounted) return; // fix lỗi cảnh báo widget có thể bị dispose
 
                               if (response['success'] == true) {
-                                // ✅ Đăng nhập thành công → chuyển đến MainScreen
+                                // Đăng nhập thành công → chuyển đến MainScreen
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(builder: (context) => const MainScreen()),
                                 );
                               } else {
-                                // ❌ Thất bại: hiển thị lỗi
+                                // Thất bại: hiển thị lỗi
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Đăng nhập thất bại: ${response['message'] ?? 'Vui lòng thử lại'}'),
@@ -156,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 );
                               }
                             } catch (e) {
-                              // ❌ Lỗi mạng / exception
+                              // Lỗi mạng / exception
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Lỗi kết nối: $e'),
@@ -189,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          // ✅ Vào trực tiếp MainScreen (chế độ khách)
+                          // Vào trực tiếp MainScreen (chế độ khách)
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (context) => const MainScreen()),
@@ -208,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    // --- Chèn ngay dưới TextFormField mật khẩu ---
+                    // --- Quên mật khẩu ---
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(

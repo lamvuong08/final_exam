@@ -155,6 +155,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           email: _emailController.text.trim(),
                           password: _passwordController.text.trim(),
                         );
+                        if (!context.mounted) return;
 
                         // kiểm tra thành công dựa vào backend trả về
                         if (response['success'] == true) { // giả sử backend trả về key 'success'

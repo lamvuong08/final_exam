@@ -31,7 +31,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Xác thực OTP', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Xác thực OTP',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
       ),
       backgroundColor: Colors.black,
@@ -42,8 +45,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           children: [
             // Phần Email / Số điện thoại
             const Text(
-              'Email / Số điện thoại *',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              'Email',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
@@ -54,29 +60,35 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: const Color(0xFF1A1A1A),
-                      hintText: 'Nhập địa chỉ email hoặc số điện thoại của Quý khách',
+                      hintText: 'Nhập địa chỉ email Quý khách',
                       hintStyle: const TextStyle(color: Colors.white70),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                        borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: Colors.white),
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Luôn cho phép nhấn "GỬI MÃ OTP"
                 ElevatedButton(
                   onPressed: _sendOtp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1DB954),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   child: const Text('GỬI MÃ OTP'),
                 ),
@@ -96,7 +108,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             // Phần nhập OTP
             const Text(
               'OTP *',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -107,13 +122,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 hintText: 'Nhập mã OTP đã được gửi',
                 hintStyle: const TextStyle(color: Colors.white70),
                 border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.white),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
                 ),
               ),
               style: const TextStyle(color: Colors.white),
@@ -141,7 +160,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1DB954),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 16,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -151,12 +173,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
+
   // Gửi mã OTP (lần đầu)
   void _sendOtp() async {
     final email = _emailController.text.trim();
@@ -171,8 +194,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     // Gọi API
     final result = await ApiClient.sendOtp(email);
+
+    if (!mounted) return;
+
     if (result['success']) {
-      // ✅ Thành công → chỉ hiển thị SnackBar nhẹ (không đè)
+      // Thành công → chỉ hiển thị SnackBar nhẹ (không đè)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -185,7 +211,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-// Gửi lại mã OTP
+  // Gửi lại mã OTP
   void _resendOtp() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -198,6 +224,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
 
     final result = await ApiClient.sendOtp(email);
+    if (!mounted) return;
+
     if (result['success']) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -211,7 +239,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-// Xác thực OTP và chuyển trang
+  // Xác thực OTP và chuyển trang
   void _verifyOtp() async {
     final email = _emailController.text.trim();
     final otp = _otpController.text.trim();
@@ -231,16 +259,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
 
     final result = await ApiClient.verifyOtp(email, otp);
+    if (!mounted) return;
+
     if (result['success']) {
       // OTP đúng → Chuyển sang màn hình đổi mật khẩu
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => ChangePasswordScreen(email: email)),
+        MaterialPageRoute(
+          builder: (context) => ChangePasswordScreen(email: email),
+        ),
       );
     } else {
       _showError(result['message']);
     }
   }
+
   void _showError(String message) {
     setState(() {
       _errorMessage = message;

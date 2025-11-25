@@ -144,7 +144,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       final email = widget.email.trim();
                       final newPassword = _passwordController.text.trim();
 
-                      // 3. ✅ Kiểm tra email có được truyền và hợp lệ không
+                      // 3. Kiểm tra email có được truyền và hợp lệ không
                       if (email.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -162,6 +162,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           email: email, // 👈 Dùng email đã trim
                           newPassword: newPassword,
                         );
+                        if (!context.mounted) return;
 
                         if (response['success'] == true) {
                           ScaffoldMessenger.of(context).showSnackBar(
