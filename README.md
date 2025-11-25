@@ -1,16 +1,6 @@
-# music
+Đồ án môn lập trình thiết bị di động
 
-Music App Project
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Đề tài: App nghe nhạc cá nhân
+Một số chức năng: - Phát nhạc cơ bản, hiển thị playlist (bài hát ưu thích, album, hàng đợi)
+                  - Tìm kiếm bài hát, ca sĩ, album - Lời bài hát
+                  - Hệ thống tài khoản (Đăng ký, đăng nhập)
