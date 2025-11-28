@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../main.dart'; // hoặc đúng đường dẫn tới RootScreen
 import 'activity_login.dart';
 import 'activity_register.dart';
 
@@ -68,10 +68,11 @@ class LoginOptionsScreen extends StatelessWidget {
                 height: 56,
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(builder: (context) => const RootScreen()),
                     );
+
                   },
                   label: const Text(
                     "Đăng nhập",
