@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'UI/activity_login_options.dart';
-import 'UI/screens/library_screen.dart';
 import 'UI/screens/profile_screen.dart';
+import 'UI/screens/library_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,54 +13,101 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Ứng dụng Nhạc',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const LoginOptionsScreen(),  // Màn hình đầu tiên
+      title: 'Music Player',
+      theme: ThemeData.dark(),
+      home: const MainScreen(),
     );
   }
 }
 
-class RootScreen extends StatefulWidget {
-  const RootScreen({super.key});
+// =============================
+// MAIN SCREEN (4 TAB)
+// =============================
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<RootScreen> createState() => _RootScreenState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _RootScreenState extends State<RootScreen> {
+class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final _pages = const [
-    LibraryScreen(),
-    ProfileScreen(),
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const SearchScreen(),
+    LibraryScreen(),      // Library của bạn
+    const ProfileScreen() // Profile của bạn
+  ];
+
+  final List<String> _titles = [
+    'Music Player',
+    'Music Player',
+    'Your Library',
+    'Profile'
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
+
+      appBar: AppBar(
         backgroundColor: Colors.black,
-        selectedItemColor: Colors.deepPurpleAccent,
-        unselectedItemColor: Colors.white60,
+        title: Text(
+          _titles[_currentIndex],
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+
+      bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: const Color(0xFF808080),
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.library_music),
-            label: 'Library',
-          ),
+              icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+              icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.library_music), label: 'Library'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
+    );
+  }
+}
+
+// =============================
+// HOME + SEARCH (GỐC NHÓM)
+// =============================
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Home", style: TextStyle(color: Colors.white)),
+    );
+  }
+}
+
+class SearchScreen extends StatelessWidget {
+  const SearchScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("Search", style: TextStyle(color: Colors.white)),
     );
   }
 }

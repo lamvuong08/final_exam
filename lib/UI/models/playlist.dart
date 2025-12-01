@@ -5,10 +5,10 @@ class PlaylistModel {
   final String image;
 
   PlaylistModel({
-    required this.id,
-    required this.name,
-    required this.songCount,
-    required this.image,
+    this.id = 0,
+    this.name = '',
+    this.songCount = 0,
+    this.image = '',
   });
 
   factory PlaylistModel.fromJson(Map<String, dynamic> json) {
@@ -20,7 +20,6 @@ class PlaylistModel {
     );
   }
 
-  // NEW: tạo từ chuỗi tên
   factory PlaylistModel.fromString(String name) {
     return PlaylistModel(
       id: 0,

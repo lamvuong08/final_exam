@@ -4,9 +4,9 @@ class ArtistModel {
   final String image;
 
   ArtistModel({
-    required this.id,
-    required this.name,
-    required this.image,
+    this.id = 0,
+    this.name = '',
+    this.image = '',
   });
 
   factory ArtistModel.fromJson(Map<String, dynamic> json) {

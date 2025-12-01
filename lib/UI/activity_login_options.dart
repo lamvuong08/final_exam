@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main.dart'; // hoặc đúng đường dẫn tới RootScreen
+
 import 'activity_login.dart';
 import 'activity_register.dart';
 
@@ -19,7 +19,7 @@ class LoginOptionsScreen extends StatelessWidget {
             children: [
               // Logo
               Image.network(
-                "https://www.1min30.com/wp-content/uploads/2018/11/SoundCloud-embleme.jpg"
+                  "https://www.1min30.com/wp-content/uploads/2018/11/SoundCloud-embleme.jpg"
               ),
 
               const SizedBox(height: 24),
@@ -68,11 +68,10 @@ class LoginOptionsScreen extends StatelessWidget {
                 height: 56,
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    Navigator.pushReplacement(
+                    Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const RootScreen()),
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
                     );
-
                   },
                   label: const Text(
                     "Đăng nhập",

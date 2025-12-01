@@ -9,14 +9,14 @@ class UserModel {
   final int following;
 
   UserModel({
-    required this.id,
-    required this.username,
-    required this.fullName,
-    required this.email,
-    required this.avatarUrl,
-    required this.plan,
-    required this.followers,
-    required this.following,
+    this.id = 0,
+    this.username = '',
+    this.fullName = '',
+    this.email = '',
+    this.avatarUrl = '',
+    this.plan = 'Free',
+    this.followers = 0,
+    this.following = 0,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -26,7 +26,7 @@ class UserModel {
       fullName: json['fullName'] ?? '',
       email: json['email'] ?? '',
       avatarUrl: json['avatarUrl'] ?? '',
-      plan: json['plan'] ?? '',
+      plan: json['plan'] ?? 'Free',
       followers: json['followers'] ?? 0,
       following: json['following'] ?? 0,
     );
