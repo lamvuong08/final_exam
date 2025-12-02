@@ -24,7 +24,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> loadData() async {
-    await controller.loadLibrary(2);
+    await controller.loadLibrary(1);
     setState(() {
       loading = false;
     });

@@ -28,7 +28,6 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public boolean updateProfile(Long id, String newUsername, String newImage) {
-
         User user = userRepo.findById(id).orElseThrow();
 
         if (newUsername != null && !newUsername.isEmpty()) {

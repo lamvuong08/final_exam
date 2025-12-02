@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:music/UI/activity_login.dart';
 import '../../api/api_service.dart';
-import '../models/user.dart';
+import '../models/user.dart' show UserModel;
+import 'package:music/UI/UI/activity_login.dart'; // CHỈNH đường dẫn đến màn login của bạn
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,63 +23,124 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ================= LOAD PROFILE =================
   Future<void> loadProfile() async {
-    try {
-      final api = ApiService();
-      final profile = await api.fetchProfile(2);
+    final api = ApiService();
+    final profile = await api.fetchProfile(1); // userId test
 
-      setState(() {
-        user = profile;
-        loading = false;
-      });
-    } catch (e) {
-      print("Load profile error: $e");
-    }
+    setState(() {
+      user = profile;
+      loading = false;
+    });
   }
 
-  // ================= UPDATE NAME =================
+  // ================= ĐỔI TÊN =================
   Future<void> changeName() async {
-    if (user == null) return;
+    final ctrl = TextEditingController(text: user!.username);
 
-    final TextEditingController nameCtrl =
-    TextEditingController(text: user!.username);
-
-    // Mở dialog nhập tên mới
     final newName = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Đổi tên"),
-          content: TextField(
-            controller: nameCtrl,
-            decoration: const InputDecoration(labelText: "Tên mới"),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
-            TextButton(
-                onPressed: () =>
-                    Navigator.pop(context, nameCtrl.text.trim()),
-                child: const Text("Lưu")),
-          ],
-        );
-      },
+      builder: (_) => AlertDialog(
+        title: const Text("Đổi tên"),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: "Tên mới"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
+          TextButton(onPressed: () => Navigator.pop(context, ctrl.text), child: const Text("Lưu")),
+        ],
+      ),
     );
 
     if (newName == null || newName.isEmpty) return;
 
     final api = ApiService();
-
-    bool ok = await api.updateProfile(
+    await api.updateProfile(
       id: user!.id,
       fullName: newName,
+      profileImage: user!.profileImage,
     );
 
-    if (ok) {
-      await loadProfile();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đổi tên thành công")),
-      );
-    }
+    await loadProfile();
+  }
+
+  // ================= ĐỔI AVATAR =================
+  Future<void> changeAvatar() async {
+    final ctrl = TextEditingController(text: user!.profileImage);
+
+    final newUrl = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Đổi Avatar"),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: "Link hình"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
+          TextButton(onPressed: () => Navigator.pop(context, ctrl.text), child: const Text("Lưu")),
+        ],
+      ),
+    );
+
+    if (newUrl == null || newUrl.isEmpty) return;
+
+    final api = ApiService();
+    await api.updateProfile(
+      id: user!.id,
+      fullName: user!.username,
+      profileImage: newUrl,
+    );
+
+    await loadProfile();
+  }
+
+  // ================= ĐỔI MẬT KHẨU =================
+  Future<void> changePassword() async {
+    final oldCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Đổi mật khẩu"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: oldCtrl, obscureText: true, decoration: const InputDecoration(labelText: "Mật khẩu cũ")),
+            TextField(controller: newCtrl, obscureText: true, decoration: const InputDecoration(labelText: "Mật khẩu mới")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Hủy")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Xác nhận")),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final api = ApiService();
+    final ok = await api.changePassword(
+      id: user!.id,
+      oldPw: oldCtrl.text,
+      newPw: newCtrl.text,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? "Đổi mật khẩu thành công" : "Sai mật khẩu cũ"),
+        backgroundColor: ok ? Colors.green : Colors.red,
+      ),
+    );
+  }
+
+  // ================= LOGOUT =================
+  void logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+    );
   }
 
   @override
@@ -92,87 +155,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Profile"),
         backgroundColor: Colors.black,
+        title: const Text("Profile"),
         centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ===================== AVATAR + NAME + EMAIL =====================
           Center(
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: NetworkImage(
-                    user!.profileImage.isEmpty
-                        ? "https://cdn-icons-png.flaticon.com/512/3177/3177440.png"
-                        : user!.profileImage,
+                GestureDetector(
+                  onTap: changeAvatar,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: NetworkImage(
+                      user!.profileImage.isEmpty
+                          ? "https://cdn-icons-png.flaticon.com/512/3177/3177440.png"
+                          : user!.profileImage,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  user!.username,
-                  style: const TextStyle(
-                      fontSize: 22,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user!.email,
-                  style: const TextStyle(color: Colors.white70),
-                ),
+                Text(user!.username, style: const TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(user!.email, style: const TextStyle(color: Colors.white70)),
               ],
             ),
           ),
 
           const SizedBox(height: 24),
-          const Text("Tài khoản",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
 
-          // ===================== ACCOUNT CARD =====================
           Card(
             color: Colors.grey[900],
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(Icons.edit, color: Colors.white),
-                  title: const Text("Chỉnh sửa hồ sơ",
-                      style: TextStyle(color: Colors.white)),
-                  subtitle: const Text("Thay đổi tên, avatar...",
-                      style: TextStyle(color: Colors.white54)),
-                  onTap: changeName,
+                  title: const Text("Đổi tên", style: TextStyle(color: Colors.white)),
+                  onTap: () async {
+                    await changeName();
+                    await loadProfile();
+                  }
                 ),
-                const Divider(color: Colors.white24),
+                ListTile(
+                  leading: const Icon(Icons.image, color: Colors.white),
+                  title: const Text("Đổi avatar", style: TextStyle(color: Colors.white)),
+                  onTap: changeAvatar,
+                ),
                 ListTile(
                   leading: const Icon(Icons.lock, color: Colors.white),
-                  title: const Text("Thay đổi mật khẩu",
-                      style: TextStyle(color: Colors.white)),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Chức năng đổi mật khẩu đang hoàn thiện")),
-                    );
-                  },
+                  title: const Text("Đổi mật khẩu", style: TextStyle(color: Colors.white)),
+                  onTap: changePassword,
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          const Text("Security",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-
-          // ===================== LOG OUT =====================
           Card(
             color: Colors.grey[900],
             child: ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("Log out", style: TextStyle(color: Colors.red)),
-              onTap: () {},
+              title: const Text("Đăng xuất", style: TextStyle(color: Colors.red)),
+              onTap: logout,
             ),
           ),
         ],

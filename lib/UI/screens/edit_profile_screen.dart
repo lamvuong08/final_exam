@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../controllers/profile_controller.dart';
+import '../../api/api_service.dart';
+import '../models/user.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  final ProfileController controller;
+  final UserModel user;
 
-  const EditProfileScreen({super.key, required this.controller});
+  const EditProfileScreen({super.key, required this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -16,7 +17,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    nameCtrl = TextEditingController(text: widget.controller.user.fullName);
+    nameCtrl = TextEditingController(text: widget.user.username);
   }
 
   @override
@@ -45,9 +46,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 25),
             ElevatedButton(
               onPressed: () async {
-                await widget.controller.updateProfile(fullName: nameCtrl.text);
-                if (!mounted) return;
-                Navigator.pop(context);
+                final api = ApiService();
+
+                bool ok = await api.updateProfile(
+                  id: widget.user.id,
+                  fullName: nameCtrl.text.trim(),
+                );
+
+                if (ok && mounted) {
+                  Navigator.pop(context, true);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurpleAccent,
