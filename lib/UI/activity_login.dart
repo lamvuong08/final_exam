@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/auth_service.dart';
+import 'UI/activity_main_patched.dart';
 import 'activity_main.dart';
 import 'activity_forgotpassword.dart';
 
@@ -145,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 // Đăng nhập thành công → chuyển đến MainScreen
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                                  MaterialPageRoute(builder: (context) => const MainScreenPatched()),
                                 );
                               } else {
                                 // Thất bại: hiển thị lỗi

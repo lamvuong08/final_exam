@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../controllers/library_controller.dart';
 import '../models/playlist.dart';
 import '../models/artist.dart';
-import '../controllers/library_controller.dart';
-
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -13,16 +12,22 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  final LibraryController controller = LibraryController();
+  final LibraryController controller = LibraryController(); // tự tạo controller
 
   bool showPlaylists = true;
-
-  final TextEditingController _musicController = TextEditingController();
+  bool loading = true;
 
   @override
-  void dispose() {
-    _musicController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    await controller.loadLibrary(2);
+    setState(() {
+      loading = false;
+    });
   }
 
   @override
@@ -30,65 +35,55 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: loading
+            ? const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        )
+            : Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // TITLE
               const Text(
-                'Thư viện',
+                "Thư viện",
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 32,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // FILTER BUTTONS (Danh sách phát / Nghệ sĩ)
+              // FILTER
               Row(
                 children: [
                   _filterChip(
-                    label: 'Danh sách phát',
+                    label: "Danh sách phát",
                     selected: showPlaylists,
-                    onTap: () {
-                      setState(() {
-                        showPlaylists = true;
-                      });
-                    },
+                    onTap: () => setState(() => showPlaylists = true),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   _filterChip(
-                    label: 'Nghệ sĩ',
+                    label: "Nghệ sĩ",
                     selected: !showPlaylists,
-                    onTap: () {
-                      setState(() {
-                        showPlaylists = false;
-                      });
-                    },
+                    onTap: () => setState(() => showPlaylists = false),
                   ),
                 ],
               ),
 
               const SizedBox(height: 16),
 
-              // LIST + CÁC NÚT THÊM
               Expanded(
                 child: ListView(
                   children: [
-                    if (showPlaylists) ..._buildPlaylistTiles() else ..._buildArtistTiles(),
-                    const SizedBox(height: 16),
-                    _buildAddButtonsSection(),
+                    if (showPlaylists)
+                      ..._buildPlaylistTiles(controller.playlists)
+                    else
+                      ..._buildArtistTiles(controller.artists),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // TEXTFIELD THÊM NHẠC
-              _buildAddMusicTextField(),
+              )
             ],
           ),
         ),
@@ -96,7 +91,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  // ================== WIDGET HELPERS ==================
+  // ───────────────────────────────────────── UI COMPONENTS ─────────────────────────────────────────
 
   Widget _filterChip({
     required String label,
@@ -106,11 +101,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.grey.shade800,
           borderRadius: BorderRadius.circular(24),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         child: Text(
           label,
           style: TextStyle(
@@ -122,162 +117,41 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  List<Widget> _buildPlaylistTiles() {
-    if (controller.playlists.isEmpty) {
-      return [
-        const Text(
-          'Chưa có danh sách phát nào',
-          style: TextStyle(color: Colors.white54),
-        ),
+  List<Widget> _buildPlaylistTiles(List<PlaylistModel> playlists) {
+    if (playlists.isEmpty) {
+      return const [
+        Text("Chưa có playlist",
+            style: TextStyle(color: Colors.white54, fontSize: 16))
       ];
     }
 
-    return controller.playlists.map((p) {
+    return playlists.map((p) {
       return ListTile(
-        leading: const Icon(Icons.music_note, color: Colors.white),
+        leading: const Icon(Icons.library_music, color: Colors.white),
         title: Text(
           p.name,
-          style: const TextStyle(color: Colors.white),
-        ),
-        subtitle: Text(
-          '${p.songCount} bài hát',
-          style: const TextStyle(color: Colors.white54),
+          style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
       );
     }).toList();
   }
 
-  List<Widget> _buildArtistTiles() {
-    if (controller.artists.isEmpty) {
-      return [
-        const Text(
-          'Chưa có nghệ sĩ nào',
-          style: TextStyle(color: Colors.white54),
-        ),
+  List<Widget> _buildArtistTiles(List<ArtistModel> artists) {
+    if (artists.isEmpty) {
+      return const [
+        Text("Chưa có nghệ sĩ yêu thích",
+            style: TextStyle(color: Colors.white54, fontSize: 16))
       ];
     }
 
-    return controller.artists.map((artist) {
+    return artists.map((a) {
       return ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(
-            artist.image.isEmpty
-                ? controller.defaultAvatar
-                : artist.image,
-          ),
-        ),
+        leading: CircleAvatar(backgroundImage: NetworkImage(a.avatarUrl)),
         title: Text(
-          artist.name,
-          style: const TextStyle(color: Colors.white),
-        ),
-        subtitle: const Text(
-          'Nghệ sĩ',
-          style: TextStyle(color: Colors.white54),
+          a.name,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
       );
     }).toList();
-  }
-
-  Widget _buildAddButtonsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // THÊM NGHỆ SĨ
-        _addItemTile(
-          icon: Icons.add,
-          label: 'Thêm nghệ sĩ',
-          onTap: _onAddArtistPressed,
-        ),
-        const SizedBox(height: 8),
-
-        // THÊM NHẠC (dùng cùng logic với TextField phía dưới)
-        _addItemTile(
-          icon: Icons.add,
-          label: 'Thêm nhạc',
-          onTap: _onAddMusicPressed,
-        ),
-      ],
-    );
-  }
-
-  Widget _addItemTile({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade800,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: Colors.white),
-      ),
-      title: Text(
-        label,
-        style: const TextStyle(color: Colors.white),
-      ),
-      onTap: onTap,
-    );
-  }
-
-  Widget _buildAddMusicTextField() {
-    return TextField(
-      controller: _musicController,
-      style: const TextStyle(color: Colors.white),
-      cursorColor: Colors.white,
-      decoration: InputDecoration(
-        hintText: 'Thêm nhạc',
-        hintStyle: const TextStyle(color: Colors.white54),
-        filled: true,
-        fillColor: Colors.grey.shade900,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-      onSubmitted: (_) => _onAddMusicPressed(),
-    );
-  }
-
-  // ================== ACTIONS ==================
-
-  void _onAddArtistPressed() {
-    setState(() {
-      controller.addArtist(
-        ArtistModel.fromString('Nghệ sĩ mới'),
-      );
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã thêm nghệ sĩ mới')),
-    );
-  }
-
-  void _onAddMusicPressed() {
-    final name = _musicController.text.trim();
-
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập tên nhạc')),
-      );
-      return;
-    }
-
-    setState(() {
-      controller.addPlaylist(
-        PlaylistModel.fromString(name),
-      );
-    });
-
-    _musicController.clear();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã thêm vào danh sách phát')),
-    );
   }
 }

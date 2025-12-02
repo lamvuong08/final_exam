@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../UI/models/user.dart';
 import '../UI/models/playlist.dart';
 import '../UI/models/artist.dart';
+import '../UI/models/song.dart';
 
 class ApiService {
   static const String baseUrl = 'http://10.0.2.2:8080/api';
@@ -11,75 +12,59 @@ class ApiService {
   // ===================== PROFILE =========================
 
   Future<UserModel> fetchProfile(int userId) async {
-    final res = await http.get(Uri.parse('$baseUrl/profile/$userId'));
+    final res = await http.get(
+      Uri.parse('$baseUrl/profile/$userId'),
+    );
 
     if (res.statusCode == 200) {
-      final data = json.decode(res.body);
-
-      return UserModel.fromJson(data);
+      return UserModel.fromJson(jsonDecode(res.body));
     } else {
-      throw Exception('Failed to load profile (${res.statusCode})');
+      throw Exception("Failed to load profile");
     }
   }
 
   Future<bool> updateProfile({
     required int id,
-    String? fullName,
-    String? avatarUrl,
+    required String fullName,
+    String? profileImage,
   }) async {
     final res = await http.put(
       Uri.parse('$baseUrl/profile/update'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {"Content-Type": "application/json"},
       body: jsonEncode({
-        'id': id,
-        'fullName': fullName ?? '',
-        'avatarUrl': avatarUrl ?? '',
+        "id": id,
+        "fullName": fullName,
+        "profileImage": profileImage ?? "",
       }),
     );
 
     return res.statusCode == 200;
   }
 
-  Future<Map<String, dynamic>> changePassword({
+  Future<bool> changePassword({
     required int id,
-    required String oldPassword,
-    required String newPassword,
+    required String oldPw,
+    required String newPw,
   }) async {
     final res = await http.put(
       Uri.parse(
-          '$baseUrl/profile/change-password?id=$id&oldPw=$oldPassword&newPw=$newPassword'),
+          '$baseUrl/profile/change-password?id=$id&oldPw=$oldPw&newPw=$newPw'),
     );
 
-    return {
-      'success': res.statusCode == 200,
-      'message': res.body
-    };
+    return res.statusCode == 200;
   }
 
   // ===================== LIBRARY =========================
 
   Future<Map<String, dynamic>> fetchLibrary(int userId) async {
-    final res = await http.get(Uri.parse('$baseUrl/library/$userId'));
+    final res = await http.get(
+      Uri.parse("$baseUrl/library/$userId"),
+    );
 
-    if (res.statusCode != 200) {
-      throw Exception('Failed to load library (${res.statusCode})');
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    } else {
+      throw Exception("Failed to load library");
     }
-
-    final data = json.decode(res.body);
-
-    return {
-      'recent': (data['recentSongs'] as List?)
-          ?.map((e) => PlaylistModel.fromString(e['title'] ?? ''))
-          .toList() ??
-          [],
-      'playlists': (data['playlists'] as List?)
-          ?.map((e) => PlaylistModel.fromString(e.toString()))
-          .toList() ??
-          [],
-      'liked': (data['likedSongs'] as List?)
-          ?.map((e) => PlaylistModel.fromString(e['title'] ?? ''))
-          .toList() ??
-          [],
-    };
   }
 }

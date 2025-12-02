@@ -1,0 +1,13 @@
+package com.music.appmusic.dto;
+
+import lombok.*;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class PlaylistDTO {
+    private Long id;
+    private String name;
+}
