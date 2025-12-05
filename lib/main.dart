@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'UI/activity_login_options.dart'; // ✅ Import và SỬ DỤNG
+import 'screens/main_screen.dart'; // Import MainScreen
 
 void main() {
   runApp(const MyApp());
@@ -14,8 +14,10 @@ class MyApp extends StatelessWidget {
       title: 'Ứng dụng Nhạc',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true, // Recommended for modern UI
       ),
-      home: const LoginOptionsScreen(), // ✅ Hiển thị màn hình đăng nhập
+      debugShowCheckedModeBanner: false, // Hide debug banner
+      home: const MainScreen(), // Set MainScreen as the home
     );
   }
 }

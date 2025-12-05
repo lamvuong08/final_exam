@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/auth_service.dart';
-import 'activity_main.dart';
+import '../screens/main_screen.dart'; // ✅ Import đúng MainScreen mới tạo
 import 'activity_forgotpassword.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -139,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 usernameOrEmail: _emailController.text.trim(),
                                 password: _passwordController.text.trim(),
                               );
-                              if (!context.mounted) return; // fix lỗi cảnh báo widget có thể bị dispose
+                              if (!context.mounted) return; 
 
                               if (response['success'] == true) {
                                 // Đăng nhập thành công → chuyển đến MainScreen
@@ -186,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Liên kết "Đăng nhập không cần mật khẩu"
+                    // Liên kết "Đăng nhập không cần mật khẩu" (Khách)
                     Center(
                       child: TextButton(
                         onPressed: () {
