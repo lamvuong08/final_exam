@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:music/UI/activity_login.dart';
 import '../../api/api_service.dart';
 import '../models/user.dart' show UserModel;
-import 'package:music/UI/UI/activity_login.dart'; // CHỈNH đường dẫn đến màn login của bạn
+import 'package:music/UI/activity_login.dart'; // CHỈNH đường dẫn đến màn login của bạn
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
