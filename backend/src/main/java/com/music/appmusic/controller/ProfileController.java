@@ -26,8 +26,8 @@ public class ProfileController {
 
         Long id = Long.valueOf(body.get("id").toString());
 
-        String newName = body.get("fullName") != null
-                ? body.get("fullName").toString()
+        String newName = body.get("username") != null
+                ? body.get("username").toString()
                 : null;
 
         String newImage = body.get("profileImage") != null

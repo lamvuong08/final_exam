@@ -1,5 +1,10 @@
 package com.music.appmusic.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class UserResponse {
     private long id;
     private String username;
@@ -10,39 +15,6 @@ public class UserResponse {
         this.id = id;
         this.username = username;
         this.email = email;
-        this.profileImage = profileImage;
-    }
-
-    // Getters và setters
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getProfileImage() {
-        return profileImage;
-    }
-
-    public void setProfileImage(String profileImage) {
         this.profileImage = profileImage;
     }
 }

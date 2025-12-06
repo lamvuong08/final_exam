@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/auth_service.dart';
 import 'activity_main.dart';
 import 'activity_forgotpassword.dart';
@@ -139,16 +140,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                 usernameOrEmail: _emailController.text.trim(),
                                 password: _passwordController.text.trim(),
                               );
-                              if (!context.mounted) return; // fix lỗi cảnh báo widget có thể bị dispose
+                              if (!context.mounted) return;
 
                               if (response['success'] == true) {
-                                // Đăng nhập thành công → chuyển đến MainScreen
+                                // 👇 SỬA DÒNG NÀY
+                                final userData = response['user']['user'];
+
+                                if (userData == null) {
+                                  throw Exception('Không tìm thấy dữ liệu người dùng');
+                                }
+
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setInt('user_id', userData['id']);
+                                await prefs.setString('user_email', userData['email'] ?? '');
+                                await prefs.setString('user_username', userData['username'] ?? 'Ẩn danh');
+                                await prefs.setString('user_profile_image', userData['profileImage'] ?? '');
+                                await prefs.setBool('is_logged_in', true);
+
+                                if (!context.mounted) return;
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(builder: (context) => const MainScreen()),
                                 );
                               } else {
-                                // Thất bại: hiển thị lỗi
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Đăng nhập thất bại: ${response['message'] ?? 'Vui lòng thử lại'}'),
@@ -157,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 );
                               }
                             } catch (e) {
-                              // Lỗi mạng / exception
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Lỗi kết nối: $e'),

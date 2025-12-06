@@ -35,7 +35,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
-    private List<Artist> favoriteArtists = new ArrayList<>();
+    private List<Artist> followedArtists = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -44,6 +44,14 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "song_id")
     )
     private List<Song> likedSongs = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_liked_contents",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "content_id")
+    )
+    private List<Content> likedContents = new ArrayList<>();
 
     // ⭐ THÊM PLAYLISTS
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

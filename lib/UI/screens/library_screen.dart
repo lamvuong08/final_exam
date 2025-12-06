@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../controllers/library_controller.dart';
-import '../models/playlist.dart';
-import '../models/artist.dart';
-import '../models/song.dart';
+import '../models/song.dart'; // chỉ import Song
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -14,7 +11,6 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   final LibraryController controller = LibraryController();
-
   bool loading = true;
   int tabIndex = 0;
 
@@ -25,82 +21,72 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> loadData() async {
-    await controller.loadLibrary(1);
+    await controller.loadLibrary(1); // mock dữ liệu
     setState(() => loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-            child: loading
-                ? const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            )
-                : Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  const Text(
-                  "Thư viện",
-                  style: TextStyle(
-                    fontSize: 32,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: loading
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            : Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Thư viện",
+                style: TextStyle(
+                  fontSize: 32,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ─── FILTER TABS ───
+              Row(
+                children: [
+                  _filterChip(
+                    label: "Danh sách phát",
+                    selected: tabIndex == 0,
+                    onTap: () => setState(() => tabIndex = 0),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  _filterChip(
+                    label: "Bài hát",
+                    selected: tabIndex == 1,
+                    onTap: () => setState(() => tabIndex = 1),
+                  ),
+                  const SizedBox(width: 10),
+                  _filterChip(
+                    label: "Ca sĩ",
+                    selected: tabIndex == 2,
+                    onTap: () => setState(() => tabIndex = 2),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-                const SizedBox(height: 16),
-
-                // ─────────────── FILTER ───────────────
-                Row(
+              // ─── NỘI DUNG THEO TAB ───
+              Expanded(
+                child: ListView(
                   children: [
-                    _filterChip(
-                      label: "Danh sách phát",
-                      selected: tabIndex == 0,
-                      onTap: () => setState(() => tabIndex = 0),
-                    ),
-                    const SizedBox(width: 10),
-
-                    _filterChip(
-                      label: "Bài hát",
-                      selected: tabIndex == 1,
-                      onTap: () => setState(() => tabIndex = 1),
-                    ),
-                    const SizedBox(width: 10),
-
-                    _filterChip(
-                      label: "Ca sĩ",
-                      selected: tabIndex == 2,
-                      onTap: () => setState(() => tabIndex = 2),
-                    ),
+                    if (tabIndex == 0) ..._buildPlaylistTiles(),
+                    if (tabIndex == 1) ..._buildSongTiles(controller.songs),
+                    if (tabIndex == 2) ..._buildArtistTiles(),
                   ],
                 ),
-
-                const SizedBox(height: 16),
-
-                Expanded(
-                    child: ListView(
-                        children: [
-                        if (tabIndex == 0)
-                    ..._buildPlaylistTiles(controller.playlists)
-
-                else if (tabIndex == 1)
-                    ..._buildSongTiles(controller.song)else
-                      ..._buildArtistTiles(controller.artists),
-                        ],
-                    ),
-                )
-                  ],
-                ),
-            ),
+              ),
+            ],
+          ),
         ),
+      ),
     );
   }
-
-  // ───────────────────────────────────────── FILTER CHIP ─────────────────────────────────────────
 
   Widget _filterChip({
     required String label,
@@ -126,69 +112,60 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  // ───────────────────────────────────────── PLAYLIST UI ─────────────────────────────────────────
+  // ─── MOCK: Playlist ───
+  List<Widget> _buildPlaylistTiles() {
+    return controller.playlists.map((name) {
+      return ListTile(
+        leading: const Icon(Icons.playlist_play, color: Colors.white),
+        title: Text(name, style: const TextStyle(color: Colors.white)),
+      );
+    }).toList();
+  }
 
-  List<Widget> _buildPlaylistTiles(List<PlaylistModel> playlists) {
-    if (playlists.isEmpty) {
+  // ─── HIỂN THỊ BÀI HÁT ───
+  List<Widget> _buildSongTiles(List<Song> songs) {
+    if (songs.isEmpty) {
       return const [
-        Text("Chưa có playlist",
-            style: TextStyle(color: Colors.white54, fontSize: 16))
+        Text(
+          "Chưa có bài hát yêu thích",
+          style: TextStyle(color: Colors.white54, fontSize: 16),
+        )
       ];
     }
 
-    return playlists.map((p) {
+    return songs.map((song) {
+      // Xây dựng URL ảnh từ coverImage
+      String imageUrl = song.coverImage != null
+          ? 'http://10.0.2.2:8080/uploads/${song.coverImage}'
+          : 'https://via.placeholder.com/50';
+
       return ListTile(
-        leading: const Icon(Icons.library_music, color: Colors.white),
+        leading: CircleAvatar(
+          backgroundImage: NetworkImage(imageUrl),
+          onBackgroundImageError: (error, stackTrace) {
+            // Fallback nếu ảnh lỗi
+          },
+        ),
         title: Text(
-          p.name,
+          song.title,
           style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        subtitle: Text(
+          song.artist?.name ?? 'Nghệ sĩ ẩn danh',
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
         ),
       );
     }).toList();
   }
 
-  // ───────────────────────────────────────── SONG UI ─────────────────────────────────────────
-
-  List<Widget> _buildSongTiles(List<SongModel> songs) {
-    if (songs.isEmpty) {
-      return const [
-        Text("Chưa có bài hát yêu thích",
-            style: TextStyle(color: Colors.white54, fontSize: 16))
-      ];
-    }
-
-    return songs.map((s) {
+  // ─── MOCK: Ca sĩ ───
+  List<Widget> _buildArtistTiles() {
+    return controller.artists.map((name) {
       return ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(s.thumbnail),
+        leading: const CircleAvatar(
+          backgroundImage: NetworkImage('https://via.placeholder.com/50'),
         ),
-        title: Text(
-          s.title,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-        ),
-        subtitle: Text(
-          s.artist,
-          style: const TextStyle(color: Colors.white70),
-        ),
-      );
-    }).toList();
-  }// ───────────────────────────────────────── ARTIST UI ─────────────────────────────────────────
-
-  List<Widget> _buildArtistTiles(List<ArtistModel> artists) {
-    if (artists.isEmpty) {
-      return const [
-        Text("Chưa có ca sĩ yêu thích",
-            style: TextStyle(color: Colors.white54, fontSize: 16))
-      ];
-    }
-
-    return artists.map((a) {
-      return ListTile(
-        leading: CircleAvatar(backgroundImage: NetworkImage(a.avatarUrl)),
-        title: Text(
-          a.name,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-        ),
+        title: Text(name, style: const TextStyle(color: Colors.white)),
       );
     }).toList();
   }

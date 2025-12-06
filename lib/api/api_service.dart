@@ -25,7 +25,7 @@ class ApiService {
 
   Future<bool> updateProfile({
     required int id,
-    required String fullName,
+    required String username,
     String? profileImage,
   }) async {
     final res = await http.put(
@@ -33,7 +33,7 @@ class ApiService {
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "id": id,
-        "fullName": fullName,
+        "username": username,
         "profileImage": profileImage ?? "",
       }),
     );

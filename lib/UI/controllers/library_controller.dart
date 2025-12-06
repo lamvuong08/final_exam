@@ -1,31 +1,18 @@
-import 'package:flutter/material.dart';
-import '../../api/api_service.dart';
-import '../models/playlist.dart';
-import '../models/artist.dart';
-import '../models/song.dart';
+// lib/controllers/library_controller.dart
+import '../models/song.dart'; // chỉ cần Song
+
 class LibraryController {
-  final ApiService api = ApiService();
+  // Dùng đúng kiểu Song (không có Model)
+  List<Song> songs = [];
+  List<String> playlists = ['Playlist 1', 'Playlist 2']; // mock đơn giản
+  List<String> artists = ['Ca sĩ A', 'Ca sĩ B'];        // mock đơn giản
 
-  List<PlaylistModel> playlists = [];
-  List<ArtistModel> artists = [];
-  List<SongModel> song = [];
   Future<void> loadLibrary(int userId) async {
-    try {
-      final data = await api.fetchLibrary(userId);
+    // Tạm thời mock dữ liệu bài hát
+    await Future.delayed(const Duration(milliseconds: 300));
 
-      song = (data['likedSongs'] as List)
-          .map((e) => SongModel.fromJson(e))
-          .toList();
+    songs = [
 
-      playlists = (data['playlists'] as List)
-          .map((e) => PlaylistModel.fromJson(e))
-          .toList();
-
-      artists = (data['favoriteArtists'] as List)
-          .map((e) => ArtistModel.fromJson(e))
-          .toList();
-    } catch (e) {
-      print("Load library error: $e");
-    }
+    ];
   }
 }

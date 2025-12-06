@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/library_screen.dart' as backendLibrary;
 import 'screens/profile_screen.dart' as backendProfile;
+import 'screens/home_screen.dart';
+import 'screens/search_screen.dart';
 
 class LibraryWrapper extends StatelessWidget {
   const LibraryWrapper({super.key});
@@ -78,38 +80,3 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// DUMMY (Home + Search)
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Text(
-          'Home',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
-
-class SearchScreen extends StatelessWidget {
-  const SearchScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Text(
-          'Search',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    );
-  }
-}
