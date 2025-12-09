@@ -233,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.only(bottom: 15),
         child: Row(
           children: [
-            imageWidget, // ✅ Bây giờ biến này đã được định nghĩa ở trên
+            imageWidget,
             const SizedBox(width: 15),
             Expanded(
               child: Column(

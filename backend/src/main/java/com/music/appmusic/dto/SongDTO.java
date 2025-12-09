@@ -7,8 +7,9 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ArtistDTO {
+public class SongDTO {
     private Long id;
-    private String name;
-    private String profileImage;
+    private String title;
+    private String coverImage;
+    private ArtistDTO artist;
 }

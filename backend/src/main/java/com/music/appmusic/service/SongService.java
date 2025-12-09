@@ -43,4 +43,30 @@ public class SongService {
     public String getNewMusicMessage() {
         return "Tính năng 'Nghe nhạc mới nhất' đang được phát triển. Vui lòng quay lại sau!";
     }
+
+    public List<SongResponse> getSongsByArtistId(Long artistId) {
+        return songRepository.findByArtistId(artistId).stream()
+                .map(this::convertToSongResponse)
+                .collect(Collectors.toList());
+    }
+    public List<SongResponse> getSongsByAlbumId(Long albumId) {
+        return songRepository.findByAlbumId(albumId).stream()
+                .map(this::convertToSongResponse)
+                .collect(Collectors.toList());
+    }
+    private SongResponse convertToSongResponse(Song song) {
+        ArtistDTO artistDTO = ArtistDTO.builder()
+                .id(song.getArtist().getId())
+                .name(song.getArtist().getName())
+                .profileImage(song.getArtist().getProfileImage())
+                .build();
+
+        return SongResponse.builder()
+                .id(song.getId())
+                .title(song.getTitle())
+                .coverImage(song.getCoverImage())
+                .playCount(song.getPlayCount())
+                .artist(artistDTO)
+                .build();
+    }
 }

@@ -1,16 +1,5 @@
-class Artist {
-  final int id;
-  final String name;
+import 'artist.dart';
 
-  Artist({required this.id, required this.name});
-
-  factory Artist.fromJson(Map<String, dynamic> json) {
-    return Artist(
-      id: json['id'],
-      name: json['name'] ?? 'Nghệ sĩ ẩn danh',
-    );
-  }
-}
 class Song {
   final int id;
   final String title;
@@ -36,18 +25,34 @@ class Song {
     required this.playCount,
   });
 
-  factory Song.fromJson(Map<String, dynamic> json) {
+  // ─── DÙNG KHI LOAD SONG TỪ ALBUM/ARTIST DETAIL ───
+  factory Song.fromJsonBrief(Map<String, dynamic> json) {
+    Map<String, dynamic>? artistJson = json['artist'];
+    Artist? artist;
+    if (artistJson != null) {
+      artist = Artist(
+        id: artistJson['id'] as int,
+        name: artistJson['name'] ?? 'Nghệ sĩ ẩn danh',
+        profileImage: artistJson['profileImage'] as String?,
+      );
+    }
+
     return Song(
-      id: json['id'],
+      id: json['id'] as int,
       title: json['title'] ?? 'Unknown',
-      coverImage: json['coverImage'],
-      filePath: json['filePath'],
-      duration: json['duration'],
-      artist: json['artist'] != null ? Artist.fromJson(json['artist']) : null,
-      albumId: json['albumId'],
-      mediaTypeId: json['mediaTypeId'],
-      lyrics: json['lyrics'],
-      playCount: json['playCount'] ?? 0,
+      coverImage: json['coverImage'] as String?,
+      filePath: json['filePath'] as String?,
+      duration: json['duration'] as int?,
+      artist: artist,
+      albumId: json['albumId'] as int?,
+      mediaTypeId: json['mediaTypeId'] as int?,
+      lyrics: json['lyrics'] as String?,
+      playCount: json['playCount'] as int? ?? 0,
     );
+  }
+
+  // ─── DÙNG KHI LOAD SONG RIÊNG LẺ (liked songs) ───
+  factory Song.fromJson(Map<String, dynamic> json) {
+    return Song.fromJsonBrief(json);
   }
 }

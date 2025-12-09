@@ -12,4 +12,11 @@ public interface SongRepository extends JpaRepository<Song, Long> {
 
     @Query("SELECT s FROM Song s ORDER BY s.playCount DESC LIMIT 5")
     List<Song> findTop5Trending();
+
+    List<Song> findByLikedByUsers_Id(Long userId);
+    Long countByLikedByUsers_Id(Long userId);
+
+    List<Song> findByArtistId(Long artistId);
+
+    List<Song> findByAlbumId(Long albumId);
 }

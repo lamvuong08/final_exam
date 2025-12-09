@@ -1,19 +1,26 @@
-class ArtistModel {
+class Artist {
   final int id;
   final String name;
-  final String avatarUrl;
+  final String? profileImage;
 
-  ArtistModel({
-    required this.id,
-    required this.name,
-    required this.avatarUrl,
-  });
+  Artist({required this.id, required this.name, this.profileImage});
 
-  factory ArtistModel.fromJson(Map<String, dynamic> json) {
-    return ArtistModel(
-      id: json['id'],
-      name: json['name'],
-      avatarUrl: json['avatarUrl'],
+  // ─── DÙNG KHI LOAD DANH SÁCH (không có songs) ───
+  factory Artist.fromJson(Map<String, dynamic> json) {
+    return Artist(
+      id: json['id'] as int? ?? -1,
+      name: json['name'] ?? 'Nghệ sĩ ẩn danh',
+      profileImage: json['profileImage'] as String?,
+    );
+  }
+
+  // ─── DÙNG KHI LOAD CHI TIẾT (có songs, nhưng songs KHÔNG parse artist sâu) ───
+  factory Artist.fromJsonDetail(Map<String, dynamic> json) {
+    List<dynamic>? songsJson = json['songs'];
+    return Artist(
+      id: json['id'] as int? ?? -1,
+      name: json['name'] ?? 'Nghệ sĩ ẩn danh',
+      profileImage: json['profileImage'] as String?,
     );
   }
 }
