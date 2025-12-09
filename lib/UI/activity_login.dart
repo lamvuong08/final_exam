@@ -143,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (!context.mounted) return;
 
                               if (response['success'] == true) {
-                                // 👇 SỬA DÒNG NÀY
                                 final userData = response['user']['user'];
 
                                 if (userData == null) {

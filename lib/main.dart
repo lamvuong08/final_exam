@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'UI/activity_login_options.dart'; // ✅ Import và SỬ DỤNG
+import 'UI/activity_login_options.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LoginOptionsScreen(), // ✅ Hiển thị màn hình đăng nhập
+      home: const LoginOptionsScreen(),
     );
   }
 }

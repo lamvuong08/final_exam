@@ -159,7 +159,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       try {
                         final authService = AuthService();
                         final response = await authService.changePassword(
-                          email: email, // 👈 Dùng email đã trim
+                          email: email,
                           newPassword: newPassword,
                         );
                         if (!context.mounted) return;

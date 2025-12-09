@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../models/song.dart'; // Đảm bảo đường dẫn đúng
+import '../models/song.dart';
+import 'music_player_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -219,35 +220,49 @@ class _HomeScreenState extends State<HomeScreen> {
       child: const Icon(Icons.music_note, color: Colors.white),
     );
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      child: Row(
-        children: [
-          imageWidget,
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  song.title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  song.artist?.name ?? 'Nghệ sĩ ẩn danh',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MusicPlayerScreen(song: song),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        child: Row(
+          children: [
+            imageWidget, // ✅ Bây giờ biến này đã được định nghĩa ở trên
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    song.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    song.artist?.name ?? 'Nghệ sĩ ẩn danh',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white70),
-            onPressed: () {},
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.white70),
+              onPressed: () {},
+            ),
+          ],
+        ),
       ),
     );
   }

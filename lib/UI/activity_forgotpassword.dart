@@ -64,12 +64,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       hintStyle: const TextStyle(color: Colors.white70),
                       border: OutlineInputBorder(
                         borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                          color: Colors.white.withValues(alpha: 0.5),
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                          color: Colors.white.withValues(alpha: 0.5),
                         ),
                       ),
                       focusedBorder: const OutlineInputBorder(
@@ -123,12 +123,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 hintStyle: const TextStyle(color: Colors.white70),
                 border: OutlineInputBorder(
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.5), // ⭐ FIX
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                 ),
                 focusedBorder: const OutlineInputBorder(
@@ -156,7 +156,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             // Button Xác nhận
             Center(
               child: ElevatedButton(
-                onPressed: _verifyOtp, // 👈 Gọi hàm mới
+                onPressed: _verifyOtp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1DB954),
                   foregroundColor: Colors.white,

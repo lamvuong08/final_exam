@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/library_controller.dart';
-import '../models/song.dart'; // chỉ import Song
+import '../models/song.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -12,7 +12,7 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   final LibraryController controller = LibraryController();
   bool loading = true;
-  int tabIndex = 0;
+  int tabIndex = 0; // 0 = Default view (Liked + New Episodes), 1=Playlists, 2=Artists, 3=Albums, 4=Podcasts
 
   @override
   void initState() {
@@ -21,7 +21,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> loadData() async {
-    await controller.loadLibrary(1); // mock dữ liệu
+    await controller.loadLibrary(1);
     setState(() => loading = false);
   }
 
@@ -37,47 +37,27 @@ class _LibraryScreenState extends State<LibraryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Thư viện",
-                style: TextStyle(
-                  fontSize: 32,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ─── FILTER TABS ───
+              // ─── TABS ───
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _filterChip(
-                    label: "Danh sách phát",
-                    selected: tabIndex == 0,
-                    onTap: () => setState(() => tabIndex = 0),
-                  ),
-                  const SizedBox(width: 10),
-                  _filterChip(
-                    label: "Bài hát",
-                    selected: tabIndex == 1,
-                    onTap: () => setState(() => tabIndex = 1),
-                  ),
-                  const SizedBox(width: 10),
-                  _filterChip(
-                    label: "Ca sĩ",
-                    selected: tabIndex == 2,
-                    onTap: () => setState(() => tabIndex = 2),
-                  ),
+                  _tabButton(label: "Playlists", index: 1),
+                  _tabButton(label: "Artists", index: 2),
+                  _tabButton(label: "Albums", index: 3),
+                  _tabButton(label: "Podcasts", index: 4),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ─── NỘI DUNG THEO TAB ───
               Expanded(
                 child: ListView(
                   children: [
-                    if (tabIndex == 0) ..._buildPlaylistTiles(),
-                    if (tabIndex == 1) ..._buildSongTiles(controller.songs),
-                    if (tabIndex == 2) ..._buildArtistTiles(),
+                    if (tabIndex == 0) ..._buildDefaultView(),
+                    if (tabIndex == 1) ..._buildPlaylists(),
+                    if (tabIndex == 2) ..._buildArtists(),
+                    if (tabIndex == 3) ..._buildAlbums(),
+                    if (tabIndex == 4) ..._buildPodcasts(),
                   ],
                 ),
               ),
@@ -88,85 +68,213 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _filterChip({
+  Widget _tabButton({
     required String label,
-    required bool selected,
-    required VoidCallback onTap,
+    required int index,
   }) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => setState(() => tabIndex = index),
       child: Container(
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.grey.shade800,
+          color: tabIndex == index ? Colors.white : Colors.grey.shade800,
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: tabIndex == index ? Colors.green : Colors.grey.shade700,
+          ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.black : Colors.white,
+            color: tabIndex == index ? Colors.black : Colors.white,
             fontWeight: FontWeight.w600,
+            fontSize: 14,
           ),
         ),
       ),
     );
   }
 
-  // ─── MOCK: Playlist ───
-  List<Widget> _buildPlaylistTiles() {
-    return controller.playlists.map((name) {
-      return ListTile(
-        leading: const Icon(Icons.playlist_play, color: Colors.white),
-        title: Text(name, style: const TextStyle(color: Colors.white)),
-      );
-    }).toList();
+  // ─── DEFAULT VIEW: Liked Songs + New Episodes ───
+  List<Widget> _buildDefaultView() {
+    return [
+      const Text(
+        "Recently played",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      const SizedBox(height: 16),
+      _likedSongsTile(),
+      const SizedBox(height: 12),
+      _newEpisodesTile(),
+      const SizedBox(height: 20),
+      // Nếu cần thêm artist/album/podcast ở default view, có thể thêm dưới này
+      // Nhưng theo yêu cầu, chỉ hiện 2 mục này khi chưa chọn tab
+    ];
   }
 
-  // ─── HIỂN THỊ BÀI HÁT ───
-  List<Widget> _buildSongTiles(List<Song> songs) {
-    if (songs.isEmpty) {
-      return const [
-        Text(
-          "Chưa có bài hát yêu thích",
-          style: TextStyle(color: Colors.white54, fontSize: 16),
-        )
-      ];
-    }
-
-    return songs.map((song) {
-      // Xây dựng URL ảnh từ coverImage
-      String imageUrl = song.coverImage != null
-          ? 'http://10.0.2.2:8080/uploads/${song.coverImage}'
-          : 'https://via.placeholder.com/50';
-
-      return ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(imageUrl),
-          onBackgroundImageError: (error, stackTrace) {
-            // Fallback nếu ảnh lỗi
-          },
+  Widget _likedSongsTile() {
+    return ListTile(
+      leading: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.purple[100],
+          borderRadius: BorderRadius.circular(8),
         ),
-        title: Text(
-          song.title,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-        ),
-        subtitle: Text(
-          song.artist?.name ?? 'Nghệ sĩ ẩn danh',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-      );
-    }).toList();
+        child: const Icon(Icons.favorite, color: Colors.red),
+      ),
+      title: const Text(
+        "Liked Songs",
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      subtitle: const Text(
+        "Playlist • 5 songs",
+        style: TextStyle(color: Colors.white70),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+      onTap: () {
+        setState(() => tabIndex = 1); // Chuyển sang tab Playlists
+      },
+    );
   }
 
-  // ─── MOCK: Ca sĩ ───
-  List<Widget> _buildArtistTiles() {
-    return controller.artists.map((name) {
-      return ListTile(
-        leading: const CircleAvatar(
-          backgroundImage: NetworkImage('https://via.placeholder.com/50'),
+  Widget _newEpisodesTile() {
+    return ListTile(
+      leading: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.purple[300],
+          borderRadius: BorderRadius.circular(8),
         ),
-        title: Text(name, style: const TextStyle(color: Colors.white)),
-      );
-    }).toList();
+        child: const Icon(Icons.notifications, color: Colors.white),
+      ),
+      title: const Text(
+        "New Episodes",
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      subtitle: const Text(
+        "Updated 2 days ago",
+        style: TextStyle(color: Colors.white70),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+      onTap: () {
+        // Có thể mở màn hình mới hoặc chuyển tab khác
+        // Hiện tại để trống, hoặc chuyển sang Podcasts nếu cần
+      },
+    );
+  }
+
+  // ─── PLAYLISTS ───
+  List<Widget> _buildPlaylists() {
+    return [
+      const Text(
+        "Playlists",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      const SizedBox(height: 16),
+      ...controller.playlists.map((name) {
+        return ListTile(
+          leading: const Icon(Icons.playlist_play, color: Colors.white),
+          title: Text(name, style: const TextStyle(color: Colors.white)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+        );
+      }).toList(),
+    ];
+  }
+
+  // ─── ARTISTS ───
+  List<Widget> _buildArtists() {
+    return [
+      const Text(
+        "Artists",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      const SizedBox(height: 16),
+      ...controller.artists.map((artistName) {
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: NetworkImage('https://via.placeholder.com/50'),
+          ),
+          title: Text(artistName, style: const TextStyle(color: Colors.white)),
+          subtitle: const Text("Artist", style: TextStyle(color: Colors.white70)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+        );
+      }).toList(),
+    ];
+  }
+
+  // ─── ALBUMS ───
+  List<Widget> _buildAlbums() {
+    return [
+      const Text(
+        "Albums",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      const SizedBox(height: 16),
+      ...List.generate(5, (index) {
+        return ListTile(
+          leading: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.blue[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.album, color: Colors.blue),
+          ),
+          title: Text("Album $index", style: const TextStyle(color: Colors.white)),
+          subtitle: const Text("Artist Name", style: TextStyle(color: Colors.white70)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+        );
+      }),
+    ];
+  }
+
+  // ─── PODCASTS ───
+  List<Widget> _buildPodcasts() {
+    return [
+      const Text(
+        "Podcasts",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      const SizedBox(height: 16),
+      ...List.generate(4, (index) {
+        return ListTile(
+          leading: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.orange[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.mic, color: Colors.orange),
+          ),
+          title: Text("Podcast $index", style: const TextStyle(color: Colors.white)),
+          subtitle: const Text("Host Name", style: TextStyle(color: Colors.white70)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+        );
+      }),
+    ];
   }
 }

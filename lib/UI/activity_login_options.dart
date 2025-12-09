@@ -10,12 +10,12 @@ class LoginOptionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea( // 👈 (Tùy chọn) Tránh notch/status bar
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0), // padding trái/phải
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.end, // 👈 CHÍNH: đẩy xuống dưới
-            crossAxisAlignment: CrossAxisAlignment.center, // 👈 căn giữa ngang
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Logo
               Image.network(
