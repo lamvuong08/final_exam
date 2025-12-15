@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../api/album_service.dart';
 import '../../utils/library_refresh_notifier.dart';
-import '../../utils/user_utils.dart';
 import '../models/album.dart';
 import '../models/song.dart';
 import '../screens/music_player_screen.dart';
 
 class AlbumDetailScreen extends StatefulWidget {
   final Album album;
+  final int userId; // thêm userId
 
   const AlbumDetailScreen({
     super.key,
     required this.album,
+    required this.userId,
   });
 
   @override
@@ -22,35 +23,19 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   bool _isFollowing = false;
   bool _loadingFollow = false;
   bool _hasChanges = false;
-  int? _userId;
 
   @override
   void initState() {
     super.initState();
-    _loadUserAndCheckFollow();
-  }
-
-  Future<void> _loadUserAndCheckFollow() async {
-    final uid = await UserUtils.getUserId();
-    if (!mounted) return;
-
-    setState(() {
-      _userId = uid;
-    });
-
-    if (_userId != null) {
-      await _checkIfFollowing();
-    }
+    _checkIfFollowing();
   }
 
   /// ================= CHECK FOLLOW =================
   Future<void> _checkIfFollowing() async {
-    if (_userId == null) return;
-
     try {
       final result = await AlbumService.isAlbumFollowed(
         widget.album.id,
-        _userId!,
+        widget.userId,
       );
 
       if (!mounted) return;
@@ -65,23 +50,13 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
 
   /// ================= TOGGLE FOLLOW =================
   Future<void> _toggleFollow() async {
-    if (_userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng đăng nhập để theo dõi album')),
-      );
-      return;
-    }
-
     if (_loadingFollow) return;
 
     setState(() => _loadingFollow = true);
 
     try {
       if (_isFollowing) {
-        await AlbumService.unfollowAlbum(
-          widget.album.id,
-          _userId!,
-        );
+        await AlbumService.unfollowAlbum(widget.album.id, widget.userId);
 
         if (!mounted) return;
 
@@ -96,10 +71,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
           const SnackBar(content: Text('Bỏ theo dõi album thành công')),
         );
       } else {
-        await AlbumService.followAlbum(
-          widget.album.id,
-          _userId!,
-        );
+        await AlbumService.followAlbum(widget.album.id, widget.userId);
 
         if (!mounted) return;
 
@@ -119,23 +91,18 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Có lỗi xảy ra, vui lòng thử lại'),
-          ),
+          const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _loadingFollow = false);
-      }
+      if (mounted) setState(() => _loadingFollow = false);
     }
   }
 
   /// ================= PLAY ALL =================
   Future<void> _playAllAlbum() async {
     try {
-      final songs =
-      await AlbumService.fetchSongsByAlbum(widget.album.id);
+      final songs = await AlbumService.fetchSongsByAlbum(widget.album.id);
 
       if (!mounted) return;
 
@@ -153,7 +120,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
             initialSong: songs.first,
             playlist: songs,
             startIndex: 0,
-            userId: _userId!,
+            userId: widget.userId,
           ),
         ),
       );
@@ -182,10 +149,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context, _hasChanges),
           ),
-          title: Text(
-            widget.album.title,
-            style: const TextStyle(color: Colors.white),
-          ),
+          title: Text(widget.album.title, style: const TextStyle(color: Colors.white)),
           centerTitle: true,
         ),
         body: SingleChildScrollView(
@@ -211,19 +175,14 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
               const SizedBox(height: 20),
               Text(
                 widget.album.title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 5),
               Text(
                 [
                   widget.album.artist.name,
-                  if (widget.album.releaseYear != null)
-                    '${widget.album.releaseYear}',
+                  if (widget.album.releaseYear != null) '${widget.album.releaseYear}',
                   '${widget.album.songCount} bài',
                 ].join(' • '),
                 style: const TextStyle(color: Colors.white70),
@@ -236,70 +195,43 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                       ? const SizedBox(
                     width: 36,
                     height: 36,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                       : IconButton(
                     icon: Icon(
                       _isFollowing ? Icons.check : Icons.add,
-                      color:
-                      _isFollowing ? Colors.green : Colors.white,
+                      color: _isFollowing ? Colors.green : Colors.white,
                       size: 28,
                     ),
                     onPressed: _toggleFollow,
-                    tooltip:
-                    _isFollowing ? 'Đã theo dõi' : 'Theo dõi album',
+                    tooltip: _isFollowing ? 'Đã theo dõi' : 'Theo dõi album',
                   ),
                   const Spacer(),
                   FloatingActionButton.small(
                     backgroundColor: Colors.green,
                     onPressed: _playAllAlbum,
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.black,
-                    ),
+                    child: const Icon(Icons.play_arrow, color: Colors.black),
                   ),
                 ],
               ),
               const SizedBox(height: 30),
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  'Songs',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: Text('Songs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
               const SizedBox(height: 10),
               SizedBox(
                 height: 400,
                 child: FutureBuilder<List<Song>>(
-                  future:
-                  AlbumService.fetchSongsByAlbum(widget.album.id),
+                  future: AlbumService.fetchSongsByAlbum(widget.album.id),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
-                      );
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.white));
                     }
 
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(
-                        child: Text(
-                          'This album has no songs.',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
+                        child: Text('This album has no songs.', style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
                       );
                     }
 
@@ -309,27 +241,10 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                       itemBuilder: (_, index) {
                         final song = songs[index];
                         return ListTile(
-                          leading: Text(
-                            '${index + 1}.',
-                            style:
-                            const TextStyle(color: Colors.white70),
-                          ),
-                          title: Text(
-                            song.title,
-                            style:
-                            const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            song.artist?.name ?? 'Unknown Artist',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          trailing: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.white70,
-                          ),
+                          leading: Text('${index + 1}.', style: const TextStyle(color: Colors.white70)),
+                          title: Text(song.title, style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(song.artist?.name ?? 'Unknown Artist', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -338,7 +253,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                                   initialSong: song,
                                   playlist: songs,
                                   startIndex: index,
-                                  userId: _userId!,
+                                  userId: widget.userId,
                                 ),
                               ),
                             );

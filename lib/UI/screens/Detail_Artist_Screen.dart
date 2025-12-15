@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import '../../api/song_service.dart';
 import '../../api/artist_service.dart';
 import '../../utils/library_refresh_notifier.dart';
-import '../../utils/user_utils.dart';
 import '../models/artist.dart';
 import '../models/song.dart';
 import '../screens/music_player_screen.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
   final Artist artist;
+  final int userId; // thêm userId
 
   const ArtistDetailScreen({
     super.key,
     required this.artist,
+    required this.userId,
   });
 
   @override
@@ -23,51 +24,33 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
   bool _isFollowing = false;
   bool _loadingFollow = false;
   bool _hasChanges = false;
-  int? _userId;
 
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    _checkIfFollowing();
   }
 
-  Future<void> _loadUser() async {
-    _userId = await UserUtils.getUserId();
-    if (_userId != null) {
-      _checkIfFollowing();
-    }
-  }
-
-  /// ================= FOLLOW STATUS =================
   Future<void> _checkIfFollowing() async {
     try {
-      final result = await ArtistService.isArtistFollowed(
-        widget.artist.id,
-        _userId!,
-      );
+      final result = await ArtistService.isArtistFollowed(widget.artist.id, widget.userId);
 
       if (!mounted) return;
 
-      setState(() {
-        _isFollowing = result;
-      });
+      setState(() => _isFollowing = result);
     } catch (e) {
       debugPrint('❌ CHECK FOLLOW ERROR: $e');
     }
   }
 
-  /// ================= TOGGLE FOLLOW =================
   Future<void> _toggleFollow() async {
-    if (_loadingFollow || _userId == null) return;
+    if (_loadingFollow) return;
 
     setState(() => _loadingFollow = true);
 
     try {
       if (_isFollowing) {
-        await ArtistService.unfollowArtist(
-          widget.artist.id,
-          _userId!,
-        );
+        await ArtistService.unfollowArtist(widget.artist.id, widget.userId);
 
         if (!mounted) return;
 
@@ -76,14 +59,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
           _hasChanges = true;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bỏ theo dõi thành công')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bỏ theo dõi thành công')));
       } else {
-        await ArtistService.followArtist(
-          widget.artist.id,
-          _userId!,
-        );
+        await ArtistService.followArtist(widget.artist.id, widget.userId);
 
         if (!mounted) return;
 
@@ -92,9 +70,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
           _hasChanges = true;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã theo dõi nghệ sĩ')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã theo dõi nghệ sĩ')));
       }
 
       LibraryRefreshNotifier.notify();
@@ -102,18 +78,13 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
       debugPrint('❌ TOGGLE FOLLOW ERROR: $e');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')));
       }
     } finally {
-      if (mounted) {
-        setState(() => _loadingFollow = false);
-      }
+      if (mounted) setState(() => _loadingFollow = false);
     }
   }
 
-  /// ================= PLAY ALL =================
   Future<void> _playAllArtist() async {
     try {
       final songs = await SongService.fetchSongsByArtist(widget.artist.id);
@@ -121,9 +92,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
       if (!mounted) return;
 
       if (songs.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nghệ sĩ chưa có bài hát')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nghệ sĩ chưa có bài hát')));
         return;
       }
 
@@ -134,20 +103,17 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
             initialSong: songs.first,
             playlist: songs,
             startIndex: 0,
-            userId: _userId!,
+            userId: widget.userId,
           ),
         ),
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể tải bài hát')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Không thể tải bài hát')));
       }
     }
   }
 
-  /// ================= UI =================
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -163,10 +129,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context, _hasChanges),
           ),
-          title: Text(
-            widget.artist.name,
-            style: const TextStyle(color: Colors.white),
-          ),
+          title: Text(widget.artist.name, style: const TextStyle(color: Colors.white)),
           centerTitle: true,
         ),
         body: SingleChildScrollView(
@@ -190,14 +153,8 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(
-                widget.artist.name,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              Text(widget.artist.name,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -205,66 +162,38 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                       ? const SizedBox(
                     width: 36,
                     height: 36,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                       : IconButton(
-                    icon: Icon(
-                      _isFollowing ? Icons.check : Icons.add,
-                      color: _isFollowing
-                          ? Colors.green
-                          : Colors.white,
-                      size: 28,
-                    ),
+                    icon: Icon(_isFollowing ? Icons.check : Icons.add,
+                        color: _isFollowing ? Colors.green : Colors.white, size: 28),
                     onPressed: _toggleFollow,
                   ),
                   const Spacer(),
                   FloatingActionButton.small(
                     backgroundColor: Colors.green,
                     onPressed: _playAllArtist,
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.black,
-                    ),
+                    child: const Icon(Icons.play_arrow, color: Colors.black),
                   ),
                 ],
               ),
               const SizedBox(height: 30),
-              const Text(
-                'Popular Songs',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              const Text('Popular Songs',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 10),
               SizedBox(
                 height: 300,
                 child: FutureBuilder<List<Song>>(
                   future: SongService.fetchSongsByArtist(widget.artist.id),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                        ),
-                      );
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Colors.white));
                     }
 
-                    if (!snapshot.hasData ||
-                        snapshot.data!.isEmpty) {
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(
-                        child: Text(
-                          'This artist has no songs yet.',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
+                        child: Text('This artist has no songs yet.',
+                            style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
                       );
                     }
 
@@ -275,19 +204,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                         final song = songs[index];
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            song.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
-                          subtitle: Text(
-                            song.artist?.name ?? 'Unknown Artist',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
+                          title: Text(song.title, style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(song.artist?.name ?? 'Unknown Artist',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12)),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -296,7 +215,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   initialSong: song,
                                   playlist: songs,
                                   startIndex: index,
-                                  userId: _userId!,
+                                  userId: widget.userId,
                                 ),
                               ),
                             );

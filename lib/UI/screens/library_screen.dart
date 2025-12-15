@@ -280,75 +280,94 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   List<Widget> _buildArtists() {
     return [
-      const Text("Artists",
+      const Text(
+          "Artists",
           style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white
+          )
+      ),
       const SizedBox(height: 16),
       ...controller.artists.map((artist) {
         String imageUrl = artist.profileImage != null
             ? 'http://10.0.2.2:8080/uploads/${artist.profileImage}'
             : 'https://via.placeholder.com/50';
+
         return ListTile(
           leading: CircleAvatar(backgroundImage: NetworkImage(imageUrl)),
-          title:
-          Text(artist.name, style: const TextStyle(color: Colors.white)),
-          subtitle:
-          const Text("Artist", style: TextStyle(color: Colors.white70)),
+          title: Text(artist.name, style: const TextStyle(color: Colors.white)),
+          subtitle: const Text("Artist", style: TextStyle(color: Colors.white70)),
           trailing: const Icon(Icons.chevron_right, color: Colors.white70),
-          onTap: () async {
-            final fullArtist =
-            await controller.fetchArtistDetail(artist.id);
-            await Navigator.push(
+          onTap: () {
+            if (userId == null) return;
+
+            Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ArtistDetailScreen(artist: fullArtist),
+                builder: (_) => ArtistDetailScreen(
+                  artist: artist,
+                  userId: userId!,
+                ),
               ),
-            );
-            await _reloadLibrary();
+            ).then((_) async {
+              await _reloadLibrary();  // reload sau khi pop
+            });
           },
         );
       }).toList(),
     ];
   }
 
+
   List<Widget> _buildAlbums() {
     return [
-      const Text("Albums",
+      const Text(
+          "Albums",
           style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white
+          )
+      ),
       const SizedBox(height: 16),
       ...controller.albums.map((album) {
         String coverUrl = album.coverImage != null
             ? 'http://10.0.2.2:8080/uploads/${album.coverImage}'
             : 'https://via.placeholder.com/50';
+
         return ListTile(
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(coverUrl, width: 50, height: 50),
           ),
-          title:
-          Text(album.title, style: const TextStyle(color: Colors.white)),
+          title: Text(album.title, style: const TextStyle(color: Colors.white)),
           subtitle: Text(
             "${album.artist.name} • ${album.releaseYear ?? ''}",
             style: const TextStyle(color: Colors.white70),
           ),
           trailing: Text("${album.songCount} bài",
               style: const TextStyle(color: Colors.white70)),
-          onTap: () async {
-            final fullAlbum =
-            await controller.fetchAlbumDetail(album.id);
-            await Navigator.push(
+          onTap: () {
+            if (userId == null) return;
+
+            Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => AlbumDetailScreen(album: fullAlbum),
+                builder: (_) => AlbumDetailScreen(
+                  album: album,
+                  userId: userId!,
+                ),
               ),
-            );
-            await _reloadLibrary();
+            ).then((_) async {
+              await _reloadLibrary();
+            });
           },
         );
       }).toList(),
     ];
   }
+
 
   List<Widget> _buildPodcasts() {
     return [

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/auth_service.dart';
-import 'activity_main.dart';
 import 'activity_forgotpassword.dart';
+import 'activity_main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Nút quay lại + Tiêu đề + Khoảng trống
+              // Header
               Row(
                 children: [
                   IconButton(
@@ -134,7 +134,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () async {
                           if (_formKey.currentState?.validate() == true) {
                             final authService = AuthService();
-
                             try {
                               final response = await authService.login(
                                 usernameOrEmail: _emailController.text.trim(),
@@ -144,7 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                               if (response['success'] == true) {
                                 final userData = response['user']['user'];
-
                                 if (userData == null) {
                                   throw Exception('Không tìm thấy dữ liệu người dùng');
                                 }
@@ -157,9 +155,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 await prefs.setBool('is_logged_in', true);
 
                                 if (!context.mounted) return;
+                                // Truyền userId vào MainScreen
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) => MainScreen(userId: userData['id']),
+                                  ),
                                 );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -198,14 +199,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Liên kết "Đăng nhập không cần mật khẩu"
+                    // Đăng nhập không cần mật khẩu (Guest)
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          // Vào trực tiếp MainScreen (chế độ khách)
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => const MainScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const MainScreen(userId: 0), // guest
+                            ),
                           );
                         },
                         style: TextButton.styleFrom(
@@ -221,7 +223,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    // --- Quên mật khẩu ---
+
+                    // Quên mật khẩu
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(

@@ -23,7 +23,8 @@ class ProfileWrapper extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int userId; // userId từ login
+  const MainScreen({super.key, required this.userId});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -32,12 +33,18 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const SearchScreen(),
-    const LibraryWrapper(),
-    const ProfileWrapper(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      HomeScreen(userId: widget.userId), // Truyền userId vào HomeScreen
+      const SearchScreen(),
+      const LibraryWrapper(),
+      const ProfileWrapper(),
+    ];
+  }
 
   final List<String> _titles = [
     'Music Player',
@@ -79,4 +86,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-

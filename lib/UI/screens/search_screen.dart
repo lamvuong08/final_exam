@@ -188,10 +188,12 @@ class _SearchScreenState extends State<SearchScreen> {
               leading: const Icon(Icons.person, color: Colors.grey),
               title: Text(artist.name, style: const TextStyle(color: Colors.white)),
               onTap: () {
+                if (_userId == null) return; // đảm bảo userId có giá trị
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ArtistDetailScreen(artist: artist),
+                    builder: (_) =>
+                        ArtistDetailScreen(artist: artist, userId: _userId!),
                   ),
                 );
               },
@@ -207,10 +209,12 @@ class _SearchScreenState extends State<SearchScreen> {
               leading: const Icon(Icons.album, color: Colors.grey),
               title: Text(album.title, style: const TextStyle(color: Colors.white)),
               onTap: () {
+                if (_userId == null) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AlbumDetailScreen(album: album),
+                    builder: (_) =>
+                        AlbumDetailScreen(album: album, userId: _userId!),
                   ),
                 );
               },
@@ -226,6 +230,7 @@ class _SearchScreenState extends State<SearchScreen> {
               leading: const Icon(Icons.music_note, color: Colors.grey),
               title: Text(song.title, style: const TextStyle(color: Colors.white)),
               onTap: () {
+                if (_userId == null) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -233,7 +238,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       initialSong: song,
                       playlist: null,
                       startIndex: 0,
-                      userId: _userId ?? -1,
+                      userId: _userId!,
                     ),
                   ),
                 );
