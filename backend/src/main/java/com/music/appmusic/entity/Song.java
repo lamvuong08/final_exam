@@ -40,12 +40,7 @@ public class Song {
     @JsonBackReference
     private MediaType mediaType;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_liked_songs",
-            joinColumns = @JoinColumn(name = "song_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
+    @ManyToMany(mappedBy = "likedSongs")
     private Set<User> likedByUsers = new HashSet<>();
 
     @Column(name = "play_count", nullable = false)

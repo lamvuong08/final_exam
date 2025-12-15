@@ -5,7 +5,6 @@ class Artist {
 
   Artist({required this.id, required this.name, this.profileImage});
 
-  // ─── DÙNG KHI LOAD DANH SÁCH (không có songs) ───
   factory Artist.fromJson(Map<String, dynamic> json) {
     return Artist(
       id: json['id'] as int? ?? -1,
@@ -14,7 +13,6 @@ class Artist {
     );
   }
 
-  // ─── DÙNG KHI LOAD CHI TIẾT (có songs, nhưng songs KHÔNG parse artist sâu) ───
   factory Artist.fromJsonDetail(Map<String, dynamic> json) {
     List<dynamic>? songsJson = json['songs'];
     return Artist(

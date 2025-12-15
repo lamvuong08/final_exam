@@ -4,16 +4,20 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import java.util.List;
-import java.util.ArrayList;
+import lombok.EqualsAndHashCode;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Entity
 @Table(name = "users")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(unique = true, nullable = false)
@@ -35,7 +39,15 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
-    private List<Artist> followedArtists = new ArrayList<>();
+    private Set<Artist> followedArtists = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "favorite_albums",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "album_id")
+    )
+    private Set<Album> followedAlbums = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -43,7 +55,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "song_id")
     )
-    private List<Song> likedSongs = new ArrayList<>();
+    private Set<Song> likedSongs = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -51,9 +63,8 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "content_id")
     )
-    private List<Content> likedContents = new ArrayList<>();
+    private Set<Content> likedContents = new HashSet<>();
 
-    // ⭐ THÊM PLAYLISTS
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Playlist> playlists = new ArrayList<>();
+    private Set<Playlist> playlists = new HashSet<>();
 }

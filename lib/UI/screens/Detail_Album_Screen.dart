@@ -1,54 +1,216 @@
 import 'package:flutter/material.dart';
 import '../../api/album_service.dart';
+import '../../utils/library_refresh_notifier.dart';
+import '../../utils/user_utils.dart';
 import '../models/album.dart';
 import '../models/song.dart';
 import '../screens/music_player_screen.dart';
 
-class AlbumDetailScreen extends StatelessWidget {
+class AlbumDetailScreen extends StatefulWidget {
   final Album album;
 
-  const AlbumDetailScreen({super.key, required this.album});
+  const AlbumDetailScreen({
+    super.key,
+    required this.album,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+  State<AlbumDetailScreen> createState() => _AlbumDetailScreenState();
+}
+
+class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
+  bool _isFollowing = false;
+  bool _loadingFollow = false;
+  bool _hasChanges = false;
+  int? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAndCheckFollow();
+  }
+
+  Future<void> _loadUserAndCheckFollow() async {
+    final uid = await UserUtils.getUserId();
+    if (!mounted) return;
+
+    setState(() {
+      _userId = uid;
+    });
+
+    if (_userId != null) {
+      await _checkIfFollowing();
+    }
+  }
+
+  /// ================= CHECK FOLLOW =================
+  Future<void> _checkIfFollowing() async {
+    if (_userId == null) return;
+
+    try {
+      final result = await AlbumService.isAlbumFollowed(
+        widget.album.id,
+        _userId!,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isFollowing = result;
+      });
+    } catch (e) {
+      debugPrint('❌ CHECK ALBUM FOLLOW ERROR: $e');
+    }
+  }
+
+  /// ================= TOGGLE FOLLOW =================
+  Future<void> _toggleFollow() async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng đăng nhập để theo dõi album')),
+      );
+      return;
+    }
+
+    if (_loadingFollow) return;
+
+    setState(() => _loadingFollow = true);
+
+    try {
+      if (_isFollowing) {
+        await AlbumService.unfollowAlbum(
+          widget.album.id,
+          _userId!,
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _isFollowing = false;
+          _hasChanges = true;
+        });
+
+        LibraryRefreshNotifier.notify();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bỏ theo dõi album thành công')),
+        );
+      } else {
+        await AlbumService.followAlbum(
+          widget.album.id,
+          _userId!,
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _isFollowing = true;
+          _hasChanges = true;
+        });
+
+        LibraryRefreshNotifier.notify();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã theo dõi album')),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ TOGGLE ALBUM FOLLOW ERROR: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Có lỗi xảy ra, vui lòng thử lại'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingFollow = false);
+      }
+    }
+  }
+
+  /// ================= PLAY ALL =================
+  Future<void> _playAllAlbum() async {
+    try {
+      final songs =
+      await AlbumService.fetchSongsByAlbum(widget.album.id);
+
+      if (!mounted) return;
+
+      if (songs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Album trống')),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MusicPlayerScreen(
+            initialSong: songs.first,
+            playlist: songs,
+            startIndex: 0,
+            userId: _userId!,
+          ),
         ),
-        title: Text(album.title, style: const TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể tải bài hát')),
+        );
+      }
+    }
+  }
+
+  /// ================= UI =================
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, _hasChanges);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context, _hasChanges),
+          ),
+          title: Text(
+            widget.album.title,
+            style: const TextStyle(color: Colors.white),
+          ),
+          centerTitle: true,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Ảnh bìa
               AspectRatio(
-                aspectRatio: 1.0,
+                aspectRatio: 1,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     image: DecorationImage(
+                      fit: BoxFit.cover,
                       image: NetworkImage(
-                        album.coverImage != null
-                            ? 'http://10.0.2.2:8080/uploads/${album.coverImage}'
+                        widget.album.coverImage != null
+                            ? 'http://10.0.2.2:8080/uploads/${widget.album.coverImage}'
                             : 'https://via.placeholder.com/300?text=Album',
                       ),
-                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Tên album
               Text(
-                album.title,
+                widget.album.title,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -57,49 +219,51 @@ class AlbumDetailScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 5),
-
-              // Thông tin
               Text(
                 [
-                  album.artist.name,
-                  if (album.releaseYear != null) '${album.releaseYear}',
-                  '${album.songCount} bài',
-                ].where((e) => e.isNotEmpty).join(' • '),
+                  widget.album.artist.name,
+                  if (widget.album.releaseYear != null)
+                    '${widget.album.releaseYear}',
+                  '${widget.album.songCount} bài',
+                ].join(' • '),
                 style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-
-              // Nút Play toàn bộ (chạy bài đầu tiên sau khi load)
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  FloatingActionButton(
+                  _loadingFollow
+                      ? const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : IconButton(
+                    icon: Icon(
+                      _isFollowing ? Icons.check : Icons.add,
+                      color:
+                      _isFollowing ? Colors.green : Colors.white,
+                      size: 28,
+                    ),
+                    onPressed: _toggleFollow,
+                    tooltip:
+                    _isFollowing ? 'Đã theo dõi' : 'Theo dõi album',
+                  ),
+                  const Spacer(),
+                  FloatingActionButton.small(
                     backgroundColor: Colors.green,
-                    onPressed: () async {
-                      try {
-                        final songs = await AlbumService.fetchSongsByAlbum(album.id);
-                        if (songs.isNotEmpty) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MusicPlayerScreen(song: songs.first),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Không thể tải danh sách bài hát')),
-                        );
-                      }
-                    },
-                    child: const Icon(Icons.play_arrow, color: Colors.black),
+                    onPressed: _playAllAlbum,
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.black,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              // Tiêu đề
+              const SizedBox(height: 30),
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -112,70 +276,76 @@ class AlbumDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-
               SizedBox(
                 height: 400,
                 child: FutureBuilder<List<Song>>(
-                  future: AlbumService.fetchSongsByAlbum(album.id),
+                  future:
+                  AlbumService.fetchSongsByAlbum(widget.album.id),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator(color: Colors.white));
-                    } else if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error, color: Colors.red, size: 48),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Load failed: ${snapshot.error.toString()}',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
                         ),
                       );
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(
                         child: Text(
                           'This album has no songs.',
-                          style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       );
-                    } else {
-                      final songs = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: songs.length,
-                        itemBuilder: (context, index) {
-                          final song = songs[index];
-                          return ListTile(
-                            leading: Text(
-                              '${index + 1}.',
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            title: Text(
-                              song.title,
-                              style: const TextStyle(color: Colors.white),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              song.artist?.name ?? 'Unknown Artist',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
-                            ),
-                            trailing: const Icon(Icons.chevron_right, color: Colors.white70),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MusicPlayerScreen(song: song),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
                     }
+
+                    final songs = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: songs.length,
+                      itemBuilder: (_, index) {
+                        final song = songs[index];
+                        return ListTile(
+                          leading: Text(
+                            '${index + 1}.',
+                            style:
+                            const TextStyle(color: Colors.white70),
+                          ),
+                          title: Text(
+                            song.title,
+                            style:
+                            const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            song.artist?.name ?? 'Unknown Artist',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right,
+                            color: Colors.white70,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MusicPlayerScreen(
+                                  initialSong: song,
+                                  playlist: songs,
+                                  startIndex: index,
+                                  userId: _userId!,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
                   },
                 ),
               ),

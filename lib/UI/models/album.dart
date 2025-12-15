@@ -21,13 +21,14 @@ class Album {
   });
 
   factory Album.fromJson(Map<String, dynamic> json) {
-    // Parse artist cơ bản (dành cho danh sách)
-    Map<String, dynamic>? artistJson = json['artist'];
+    Map<String, dynamic>? artistJson = json['artist'] as Map<String, dynamic>?;
     Artist artist;
     if (artistJson != null) {
       artist = Artist(
-        id: artistJson['id'] as int,
-        name: artistJson['name'] ?? 'Nghệ sĩ ẩn danh',
+        id: artistJson['id'] as int? ?? -1,
+        name: artistJson['name'] is String
+            ? artistJson['name']
+            : 'Nghệ sĩ ẩn danh',
         profileImage: artistJson['profileImage'] as String?,
       );
     } else {
@@ -35,31 +36,37 @@ class Album {
     }
 
     return Album(
-      id: json['id'] as int,
-      title: json['title'] as String,
+      id: json['id'] as int? ?? -1,
+      title: json['title'] as String? ?? 'Untitled Album',
       coverImage: json['coverImage'] as String?,
       releaseYear: json['releaseYear'] as int?,
-      songCount: json['songCount'] as int,
+      songCount: json['songCount'] as int? ?? 0,
       artist: artist,
       songs: null,
     );
   }
 
+  /// Dùng khi tải chi tiết album (đầy đủ dữ liệu)
   factory Album.fromJsonDetail(Map<String, dynamic> json) {
     List<Song>? songs;
     if (json['songs'] != null) {
-      songs = (json['songs'] as List)
-          .map((s) => Song.fromJsonBrief(s as Map<String, dynamic>))
-          .toList();
+      final songsList = json['songs'] as List?;
+      if (songsList != null) {
+        songs = songsList
+            .map((s) => Song.fromJsonBrief(s as Map<String, dynamic>))
+            .toList();
+      }
     }
 
-    // Parse artist thủ công — tránh parse songs trong artist
-    Map<String, dynamic>? artistJson = json['artist'];
+    // Parse artist
+    Map<String, dynamic>? artistJson = json['artist'] as Map<String, dynamic>?;
     Artist artist;
     if (artistJson != null) {
       artist = Artist(
-        id: artistJson['id'] as int,
-        name: artistJson['name'] ?? 'Nghệ sĩ ẩn danh',
+        id: artistJson['id'] as int? ?? -1,
+        name: artistJson['name'] is String
+            ? artistJson['name']
+            : 'Nghệ sĩ ẩn danh',
         profileImage: artistJson['profileImage'] as String?,
       );
     } else {
@@ -67,8 +74,8 @@ class Album {
     }
 
     return Album(
-      id: json['id'] as int,
-      title: json['title'] as String,
+      id: json['id'] as int? ?? -1,
+      title: json['title'] as String? ?? 'Untitled Album',
       coverImage: json['coverImage'] as String?,
       releaseYear: json['releaseYear'] as int?,
       songCount: songs?.length ?? 0,

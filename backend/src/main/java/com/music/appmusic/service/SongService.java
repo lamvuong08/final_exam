@@ -1,10 +1,12 @@
-// com.music.appmusic.service.SongService.java
 package com.music.appmusic.service;
 
 import com.music.appmusic.dto.ArtistDTO;
 import com.music.appmusic.dto.SongResponse;
 import com.music.appmusic.entity.Song;
+import com.music.appmusic.entity.User;
 import com.music.appmusic.repository.SongRepository;
+import com.music.appmusic.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +19,9 @@ public class SongService {
     @Autowired
     private SongRepository songRepository;
 
-    // ✅ Đổi kiểu trả về
+    @Autowired
+    private UserRepository userRepository;
+
     public List<SongResponse> getTrendingSongs() {
         return songRepository.findTop5Trending().stream()
                 .map(song -> {
@@ -68,5 +72,38 @@ public class SongService {
                 .playCount(song.getPlayCount())
                 .artist(artistDTO)
                 .build();
+    }
+
+    public boolean isSongLiked(Long userId, Long songId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getLikedSongs().stream()
+                .anyMatch(song -> song.getId().equals(songId));
+    }
+
+    @Transactional
+    public void likeSong(Long userId, Long songId) {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new RuntimeException("Song not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.getLikedSongs().contains(song)) {
+            user.getLikedSongs().add(song);
+            userRepository.save(user);
+        }
+    }
+
+    @Transactional
+    public void unlikeSong(Long userId, Long songId) {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new RuntimeException("Song not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getLikedSongs().contains(song)) {
+            user.getLikedSongs().remove(song);
+            userRepository.save(user);
+        }
     }
 }

@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../api/song_service.dart';
+import '../../utils/library_refresh_notifier.dart';
 import '../models/song.dart';
 
 class MusicPlayerScreen extends StatefulWidget {
-  final Song song;
+  final Song initialSong;
+  final List<Song>? playlist;
+  final int startIndex;
+  final int userId;
 
-  const MusicPlayerScreen({super.key, required this.song});
+  const MusicPlayerScreen({
+    super.key,
+    required this.initialSong,
+    this.playlist,
+    this.startIndex = 0,
+    required this.userId,
+  });
 
   @override
   State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
@@ -16,49 +27,112 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   bool _isPlaying = false;
+  int _currentIndex = 0;
+  bool _isLiked = false;
+  bool _loadingLike = false;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.startIndex;
     _audioPlayer = AudioPlayer();
-
     _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) {
-        setState(() {
-          _position = position;
-        });
-      }
+      if (mounted) setState(() => _position = position);
     });
-
     _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) {
-        setState(() {
-          _duration = duration;
-        });
-      }
+      if (mounted) setState(() => _duration = duration);
     });
-
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isPlaying = state == PlayerState.playing;
-        });
-      }
+    _audioPlayer.onPlayerComplete.listen((_) {
+      _playNext();
     });
-
-    _playSong();
+    _playCurrentSong();
+    _loadLikeStatus();
   }
 
-  Future<void> _playSong() async {
+  Song get _currentSong => widget.playlist != null
+      ? widget.playlist![_currentIndex]
+      : widget.initialSong;
+
+  Future<void> _loadLikeStatus() async {
     try {
-      final songUrl = 'http://10.0.2.2:8080/api/music/stream/${widget.song.id}';
+      final liked = await SongService.isSongLiked(_currentSong.id, widget.userId);
+      if (!mounted) return;
+      setState(() => _isLiked = liked);
+    } catch (e) {
+      debugPrint('❌ Load like status error: $e');
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_loadingLike) return;
+    setState(() => _loadingLike = true);
+    try {
+      if (_isLiked) {
+        await SongService.unlikeSong(_currentSong.id, widget.userId);
+      } else {
+        await SongService.likeSong(_currentSong.id, widget.userId);
+      }
+      if (!mounted) return;
+      setState(() => _isLiked = !_isLiked);
+
+      LibraryRefreshNotifier.notify();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isLiked ? 'Đã thêm vào yêu thích' : 'Đã bỏ yêu thích'),
+        ),
+      );
+    } catch (e) {
+      debugPrint('❌ Toggle like error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingLike = false);
+    }
+  }
+
+  Future<void> _playCurrentSong() async {
+    final song = _currentSong;
+    try {
+      final songUrl = 'http://10.0.2.2:8080/api/music/stream/${song.id}';
       await _audioPlayer.play(UrlSource(songUrl));
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+          _position = Duration.zero;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể phát bài hát: $e')),
+          SnackBar(content: Text('Không thể phát: ${song.title}')),
         );
       }
+    }
+  }
+
+  Future<void> _playNext() async {
+    if (widget.playlist == null || widget.playlist!.isEmpty) return;
+    final nextIndex = (_currentIndex + 1) % widget.playlist!.length;
+    setState(() => _currentIndex = nextIndex);
+    await _playCurrentSong();
+    await _loadLikeStatus();
+  }
+
+  Future<void> _playPrevious() async {
+    if (widget.playlist == null || widget.playlist!.isEmpty) return;
+    if (_position.inSeconds > 3) {
+      await _audioPlayer.seek(Duration.zero);
+    } else {
+      final prevIndex = (_currentIndex - 1) >= 0
+          ? (_currentIndex - 1)
+          : widget.playlist!.length - 1;
+      setState(() => _currentIndex = prevIndex);
+      await _playCurrentSong();
+      await _loadLikeStatus();
     }
   }
 
@@ -77,20 +151,26 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentSong = _currentSong;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Music App', style: TextStyle(color: Colors.white)),
+        title: const Text('Now Playing', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.favorite_border, color: Colors.white70),
-            onPressed: () {},
+            icon: _loadingLike
+                ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                : Icon(
+              _isLiked ? Icons.favorite : Icons.favorite_border,
+              color: _isLiked ? Colors.red : Colors.white70,
+            ),
+            onPressed: _toggleLike,
           ),
         ],
       ),
-      body: SingleChildScrollView( // ✅ BAO TOÀN BỘ NỘI DUNG TRONG SINGLE CHILD SCROLL VIEW
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -99,14 +179,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 aspectRatio: 1.0,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: widget.song.coverImage?.isNotEmpty == true
+                    color: currentSong.coverImage?.isNotEmpty == true
                         ? null
                         : Colors.grey[800],
                     borderRadius: BorderRadius.circular(15),
-                    image: widget.song.coverImage?.isNotEmpty == true
+                    image: currentSong.coverImage?.isNotEmpty == true
                         ? DecorationImage(
                       image: NetworkImage(
-                        'http://10.0.2.2:8080/uploads/${widget.song.coverImage}',
+                        'http://10.0.2.2:8080/uploads/${currentSong.coverImage}',
                       ),
                       fit: BoxFit.cover,
                     )
@@ -115,9 +195,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               Text(
-                widget.song.title,
+                currentSong.title,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -127,7 +206,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                widget.song.artist?.name ?? 'Nghệ sĩ ẩn danh',
+                currentSong.artist?.name ?? 'Nghệ sĩ ẩn danh',
                 style: const TextStyle(
                   fontSize: 18,
                   color: Colors.white70,
@@ -135,42 +214,44 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.favorite, color: Colors.red),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Đã thêm vào yêu thích')),
-                      );
-                    },
+                    icon: _loadingLike
+                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                        : Icon(
+                      _isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: _isLiked ? Colors.red : Colors.white70,
+                    ),
+                    onPressed: _toggleLike,
                     splashRadius: 20,
                   ),
                   const SizedBox(width: 20),
                   IconButton(
                     icon: const Icon(Icons.queue_music_outlined, color: Colors.white),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Hiển thị danh sách phát')),
-                      );
+                      if (widget.playlist != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Đang phát ${widget.playlist!.length} bài'),
+                          ),
+                        );
+                      }
                     },
                     splashRadius: 20,
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-
               Row(
                 children: [
                   Text(_formatDuration(_position), style: const TextStyle(color: Colors.white70)),
                   Expanded(
                     child: SliderTheme(
                       data: SliderThemeData(
-                        thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
-                        overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                         activeTrackColor: Colors.white,
                         inactiveTrackColor: Colors.white30,
                         thumbColor: Colors.white,
@@ -190,15 +271,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                   Text(_formatDuration(_duration), style: const TextStyle(color: Colors.white70)),
                 ],
               ),
-
               const SizedBox(height: 30),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.skip_previous, color: Colors.white, size: 40),
-                    onPressed: () {},
+                    onPressed: _playPrevious,
                   ),
                   const SizedBox(width: 20),
                   IconButton(
@@ -212,21 +291,21 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                     onPressed: () async {
                       if (_isPlaying) {
                         await _audioPlayer.pause();
+                        setState(() => _isPlaying = false);
                       } else {
                         await _audioPlayer.resume();
+                        setState(() => _isPlaying = true);
                       }
                     },
                   ),
                   const SizedBox(width: 20),
                   IconButton(
                     icon: const Icon(Icons.skip_next, color: Colors.white, size: 40),
-                    onPressed: () {},
+                    onPressed: _playNext,
                   ),
                 ],
               ),
-
               const SizedBox(height: 40),
-
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -246,7 +325,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'This is a placeholder for lyrics.\nYou can fetch real lyrics via API later.',
+                      currentSong.lyrics ?? 'No lyrics available.',
                       style: const TextStyle(color: Colors.white70),
                     ),
                   ],

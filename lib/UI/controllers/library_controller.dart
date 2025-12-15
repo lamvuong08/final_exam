@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/album.dart';
 import '../models/song.dart';
 import '../models/artist.dart';
-import '../models/album.dart';
 
 class LibraryController {
   List<Song> songs = [];
@@ -12,63 +12,92 @@ class LibraryController {
 
   static const String baseUrl = 'http://10.0.2.2:8080/api';
 
+  // 👇 Thêm headers chống cache
+  final Map<String, String> _noCacheHeaders = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  };
+
   Future<void> loadLibrary(int userId) async {
     await Future.wait([
       _loadLikedSongs(userId),
-      _loadArtists(),
-      _loadAlbums(),
+      _loadFollowedArtists(userId),
+      _loadFollowedAlbums(userId),
       _loadPlaylists(userId),
     ]);
   }
 
   Future<void> _loadLikedSongs(int userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/user/$userId/liked-songs'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/$userId/liked-songs'),
+      headers: _noCacheHeaders, // 👈 THÊM
+    );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       songs = data.map((e) => Song.fromJson(e)).toList();
     }
   }
 
-  Future<void> _loadArtists() async {
-    final response = await http.get(Uri.parse('$baseUrl/artists'));
+  Future<void> _loadFollowedArtists(int userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/$userId/library/artists'),
+      headers: _noCacheHeaders, // 👈 THÊM
+    );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       artists = data.map((e) => Artist.fromJson(e)).toList();
+    } else {
+      artists = [];
     }
   }
 
-  Future<void> _loadAlbums() async {
-    final response = await http.get(Uri.parse('$baseUrl/albums'));
+  Future<void> _loadFollowedAlbums(int userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/$userId/library/albums'),
+      headers: _noCacheHeaders, // 👈 THÊM
+    );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       albums = data.map((e) => Album.fromJson(e)).toList();
+    } else {
+      albums = [];
     }
   }
 
   Future<void> _loadPlaylists(int userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/user/$userId/playlists'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/$userId/playlists'),
+      headers: _noCacheHeaders, // 👈 THÊM
+    );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
       playlists = List<Map<String, dynamic>>.from(data);
     }
   }
-  // ─── GỌI API CHI TIẾT ALBUM ───
+
+  // 👇 Chi tiết album/artist — cũng nên chống cache
   Future<Album> fetchAlbumDetail(int albumId) async {
-    final response = await http.get(Uri.parse('$baseUrl/albums/$albumId'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/albums/$albumId'),
+      headers: _noCacheHeaders,
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return Album.fromJsonDetail(data); // ⚠️ Dùng fromJsonDetail để tránh vòng lặp
+      return Album.fromJsonDetail(data);
     } else {
       throw Exception('Failed to load album detail: ${response.statusCode}');
     }
   }
 
-  // ─── GỌI API CHI TIẾT ARTIST ───
   Future<Artist> fetchArtistDetail(int artistId) async {
-    final response = await http.get(Uri.parse('$baseUrl/artists/$artistId'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/artists/$artistId'),
+      headers: _noCacheHeaders,
+    );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return Artist.fromJsonDetail(data); // ⚠️ Dùng fromJsonDetail
+      return Artist.fromJsonDetail(data);
     } else {
       throw Exception('Failed to load artist detail: ${response.statusCode}');
     }

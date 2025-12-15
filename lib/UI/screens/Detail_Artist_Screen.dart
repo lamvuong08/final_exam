@@ -1,63 +1,237 @@
 import 'package:flutter/material.dart';
 import '../../api/song_service.dart';
+import '../../api/artist_service.dart';
+import '../../utils/library_refresh_notifier.dart';
+import '../../utils/user_utils.dart';
 import '../models/artist.dart';
 import '../models/song.dart';
 import '../screens/music_player_screen.dart';
 
-class ArtistDetailScreen extends StatelessWidget {
+class ArtistDetailScreen extends StatefulWidget {
   final Artist artist;
 
-  const ArtistDetailScreen({super.key, required this.artist});
+  const ArtistDetailScreen({
+    super.key,
+    required this.artist,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+  State<ArtistDetailScreen> createState() => _ArtistDetailScreenState();
+}
+
+class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
+  bool _isFollowing = false;
+  bool _loadingFollow = false;
+  bool _hasChanges = false;
+  int? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    _userId = await UserUtils.getUserId();
+    if (_userId != null) {
+      _checkIfFollowing();
+    }
+  }
+
+  /// ================= FOLLOW STATUS =================
+  Future<void> _checkIfFollowing() async {
+    try {
+      final result = await ArtistService.isArtistFollowed(
+        widget.artist.id,
+        _userId!,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isFollowing = result;
+      });
+    } catch (e) {
+      debugPrint('❌ CHECK FOLLOW ERROR: $e');
+    }
+  }
+
+  /// ================= TOGGLE FOLLOW =================
+  Future<void> _toggleFollow() async {
+    if (_loadingFollow || _userId == null) return;
+
+    setState(() => _loadingFollow = true);
+
+    try {
+      if (_isFollowing) {
+        await ArtistService.unfollowArtist(
+          widget.artist.id,
+          _userId!,
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _isFollowing = false;
+          _hasChanges = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bỏ theo dõi thành công')),
+        );
+      } else {
+        await ArtistService.followArtist(
+          widget.artist.id,
+          _userId!,
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _isFollowing = true;
+          _hasChanges = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã theo dõi nghệ sĩ')),
+        );
+      }
+
+      LibraryRefreshNotifier.notify();
+    } catch (e) {
+      debugPrint('❌ TOGGLE FOLLOW ERROR: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Có lỗi xảy ra, vui lòng thử lại')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingFollow = false);
+      }
+    }
+  }
+
+  /// ================= PLAY ALL =================
+  Future<void> _playAllArtist() async {
+    try {
+      final songs = await SongService.fetchSongsByArtist(widget.artist.id);
+
+      if (!mounted) return;
+
+      if (songs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nghệ sĩ chưa có bài hát')),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MusicPlayerScreen(
+            initialSong: songs.first,
+            playlist: songs,
+            startIndex: 0,
+            userId: _userId!,
+          ),
         ),
-        title: const Text('Artist', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể tải bài hát')),
+        );
+      }
+    }
+  }
+
+  /// ================= UI =================
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, _hasChanges);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context, _hasChanges),
+          ),
+          title: Text(
+            widget.artist.name,
+            style: const TextStyle(color: Colors.white),
+          ),
+          centerTitle: true,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Ảnh nghệ sĩ
               AspectRatio(
-                aspectRatio: 1.0,
+                aspectRatio: 1,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     image: DecorationImage(
+                      fit: BoxFit.cover,
                       image: NetworkImage(
-                        artist.profileImage != null
-                            ? 'http://10.0.2.2:8080/uploads/${artist.profileImage}'
+                        widget.artist.profileImage != null
+                            ? 'http://10.0.2.2:8080/uploads/${widget.artist.profileImage}'
                             : 'https://via.placeholder.com/300?text=Artist',
                       ),
-                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Tên nghệ sĩ
               Text(
-                artist.name,
+                widget.artist.name,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
-                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  _loadingFollow
+                      ? const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : IconButton(
+                    icon: Icon(
+                      _isFollowing ? Icons.check : Icons.add,
+                      color: _isFollowing
+                          ? Colors.green
+                          : Colors.white,
+                      size: 28,
+                    ),
+                    onPressed: _toggleFollow,
+                  ),
+                  const Spacer(),
+                  FloatingActionButton.small(
+                    backgroundColor: Colors.green,
+                    onPressed: _playAllArtist,
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 30),
-
               const Text(
                 'Popular Songs',
                 style: TextStyle(
@@ -70,73 +244,66 @@ class ArtistDetailScreen extends StatelessWidget {
               SizedBox(
                 height: 300,
                 child: FutureBuilder<List<Song>>(
-                  future: SongService.fetchSongsByArtist(artist.id),
+                  future: SongService.fetchSongsByArtist(widget.artist.id),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator(color: Colors.white));
-                    } else if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error, color: Colors.red, size: 48),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Failed to load songs.\n${snapshot.error.toString()}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                          ],
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
                         ),
                       );
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    }
+
+                    if (!snapshot.hasData ||
+                        snapshot.data!.isEmpty) {
                       return const Center(
                         child: Text(
                           'This artist has no songs yet.',
-                          style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
-                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       );
-                    } else {
-                      final songs = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: songs.length,
-                        itemBuilder: (context, index) {
-                          final song = songs[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: song.coverImage != null
-                                ? Image.network(
-                              'http://10.0.2.2:8080/uploads/${song.coverImage}',
-                              width: 45,
-                              height: 45,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                              const CircleAvatar(child: Icon(Icons.music_note, color: Colors.grey)),
-                            )
-                                : const CircleAvatar(child: Icon(Icons.music_note, color: Colors.grey)),
-                            title: Text(
-                              song.title,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              song.artist?.name ?? 'Unknown Artist',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MusicPlayerScreen(song: song),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
                     }
+
+                    final songs = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: songs.length,
+                      itemBuilder: (_, index) {
+                        final song = songs[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            song.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                            ),
+                          ),
+                          subtitle: Text(
+                            song.artist?.name ?? 'Unknown Artist',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MusicPlayerScreen(
+                                  initialSong: song,
+                                  playlist: songs,
+                                  startIndex: index,
+                                  userId: _userId!,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
                   },
                 ),
               ),

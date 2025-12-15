@@ -18,8 +18,10 @@ class LoginOptionsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Logo
-              Image.network(
-                  "https://www.1min30.com/wp-content/uploads/2018/11/SoundCloud-embleme.jpg"
+              Image.asset(
+                  "assets/img/logo.png",
+                  height: 450,
+                  width: 450,
               ),
 
               const SizedBox(height: 24),
