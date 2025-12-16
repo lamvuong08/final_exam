@@ -43,4 +43,10 @@ public class SongController {
     public ResponseEntity<Boolean> isSongLiked(@PathVariable Long userId, @PathVariable Long songId) {
         return ResponseEntity.ok(songService.isSongLiked(userId, songId));
     }
+    @GetMapping("/songs/{id}")
+    public ResponseEntity<SongResponse> getSongById(@PathVariable Long id) {
+        SongResponse song = songService.getSongById(id);
+        return ResponseEntity.ok(song);
+    }
+
 }

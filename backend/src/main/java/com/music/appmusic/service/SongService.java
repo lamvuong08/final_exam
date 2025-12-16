@@ -69,6 +69,8 @@ public class SongService {
                 .id(song.getId())
                 .title(song.getTitle())
                 .coverImage(song.getCoverImage())
+                .filePath(song.getFilePath()) // 🔥 BẮT BUỘC
+                .lyrics(song.getLyrics())     // optional
                 .playCount(song.getPlayCount())
                 .artist(artistDTO)
                 .build();
@@ -105,5 +107,25 @@ public class SongService {
             user.getLikedSongs().remove(song);
             userRepository.save(user);
         }
+    }
+    public SongResponse getSongById(Long songId) {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new RuntimeException("Song not found"));
+
+        return SongResponse.builder()
+                .id(song.getId())
+                .title(song.getTitle())
+                .coverImage(song.getCoverImage())
+                .lyrics(song.getLyrics())
+                .playCount(song.getPlayCount())
+                .filePath(song.getFilePath()) // QUAN TRỌNG
+                .artist(
+                        ArtistDTO.builder()
+                                .id(song.getArtist().getId())
+                                .name(song.getArtist().getName())
+                                .profileImage(song.getArtist().getProfileImage())
+                                .build()
+                )
+                .build();
     }
 }

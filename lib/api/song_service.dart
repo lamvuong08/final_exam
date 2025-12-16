@@ -51,4 +51,43 @@ class SongService {
       return false;
     }
   }
+
+  static Future<void> recordPlay({
+    required int songId,
+    required int userId,
+    required int duration,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/play-history'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'contentId': songId,
+        'userId': userId,
+        'duration': duration,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(
+        'Record play failed: ${response.statusCode} - ${response.body}',
+      );
+    }
+  }
+  static Future<Song> getSongById(int songId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/api/songs/$songId'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return Song.fromJson(data);
+    } else {
+      throw Exception(
+        'Failed to load song detail: ${response.statusCode}',
+      );
+    }
+  }
+
 }

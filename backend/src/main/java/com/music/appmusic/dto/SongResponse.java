@@ -15,6 +15,8 @@ public class SongResponse {
     private Long id;
     private String title;
     private String coverImage; // ← THÊM DÒNG NÀY
+    private String lyrics;
+    private String filePath;
     private ArtistDTO artist;
     private Long playCount;
 }

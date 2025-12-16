@@ -5,7 +5,7 @@ import '../models/song.dart';
 import '../screens/music_player_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final int userId; // Bắt buộc
+  final int userId;
   const HomeScreen({super.key, required this.userId});
 
   @override
@@ -23,52 +23,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadTrendingSongs() async {
-    setState(() => _isLoading = true);
     try {
-      final response = await http.get(
+      final res = await http.get(
         Uri.parse('http://10.0.2.2:8080/api/music/trending'),
       );
+
       if (!mounted) return;
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final List<Song> songs = data.map((e) => Song.fromJson(e)).toList();
-        if (!mounted) return;
+
+      if (res.statusCode == 200) {
+        final List data = jsonDecode(res.body);
         setState(() {
-          _trendingSongs = songs;
+          _trendingSongs = data.map((e) => Song.fromJson(e)).toList();
           _isLoading = false;
         });
       } else {
-        throw Exception('Failed to load trending songs');
+        throw Exception();
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải bài hát: $e')),
-        );
-      }
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _handleNewMusicPressed() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:8080/api/music/new-music'),
-      );
-      if (!mounted) return;
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.body)),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể tải nhạc mới')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể kết nối backend')),
+          const SnackBar(content: Text('Lỗi tải danh sách bài hát')),
         );
       }
     }
@@ -78,194 +53,128 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Banner
-              Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Colors.deepPurple, Colors.purpleAccent],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      right: -20,
-                      bottom: -20,
-                      child: Icon(
-                        Icons.music_note,
-                        size: 150,
-                        color: Colors.deepPurple.withAlpha(51),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Nghe nhạc mới nhất',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Top Hit 2024 đang chờ bạn!',
-                            style: TextStyle(color: Colors.white70, fontSize: 16),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _handleNewMusicPressed,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.deepPurple,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Nghe ngay'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
+      body: _isLoading
+          ? const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      )
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildBanner(),
+            const SizedBox(height: 30),
 
-              // Trending Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Thịnh hành',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('Xem tất cả',
-                        style: TextStyle(color: Colors.white70)),
-                  ),
-                ],
+            // ====== THỊNH HÀNH ======
+            const Text(
+              'Thịnh hành',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
-              const SizedBox(height: 15),
+            ),
+            const SizedBox(height: 15),
 
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                  : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _trendingSongs.length,
-                itemBuilder: (context, index) {
-                  final song = _trendingSongs[index];
-                  return _buildSongItem(song, index);
-                },
-              ),
-            ],
-          ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _trendingSongs.length,
+              itemBuilder: (context, index) {
+                final song = _trendingSongs[index];
+                return _buildSongItem(song, index);
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSongItem(Song song, int index) {
-    String imageUrl = 'http://10.0.2.2:8080/uploads/${song.coverImage ?? ''}';
-
-    Widget imageWidget = song.coverImage != null && song.coverImage!.isNotEmpty
-        ? Image.network(
-      imageUrl,
-      width: 60,
-      height: 60,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.deepPurple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.music_note, color: Colors.white),
-        );
-      },
-    )
-        : Container(
-      width: 60,
-      height: 60,
+  // ====== BANNER ======
+  Widget _buildBanner() {
+    return Container(
+      height: 180,
       decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Colors.deepPurple, Colors.purpleAccent],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      child: const Icon(Icons.music_note, color: Colors.white),
-    );
-
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MusicPlayerScreen(
-              initialSong: song,
-              playlist: _trendingSongs,
-              startIndex: index,
-              userId: widget.userId,
+      padding: const EdgeInsets.all(20),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Icon(
+              Icons.music_note,
+              size: 140,
+              color: Colors.white.withAlpha(40),
             ),
           ),
-        );
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: imageWidget,
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    song.title,
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    song.artist?.name ?? 'Nghệ sĩ ẩn danh',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Nghe nhạc mới nhất\nTop Hit 2024',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.white70),
-              onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ====== ITEM BÀI HÁT ======
+  Widget _buildSongItem(Song song, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(
+            'http://10.0.2.2:8080/uploads/${song.coverImage ?? ''}',
+            width: 55,
+            height: 55,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 55,
+              height: 55,
+              color: Colors.deepPurple.withAlpha(40),
+              child: const Icon(Icons.music_note, color: Colors.white),
             ),
-          ],
+          ),
         ),
+        title: Text(
+          song.title,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          song.artist?.name ?? 'Nghệ sĩ ẩn danh',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        trailing: const Icon(Icons.more_vert, color: Colors.white54),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MusicPlayerScreen(
+                initialSong: song,
+                playlist: _trendingSongs,
+                startIndex: index,
+                userId: widget.userId,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
