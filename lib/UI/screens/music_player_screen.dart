@@ -30,6 +30,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   Song? _song;
   bool _loadingSong = true;
+  String? _lyrics;
+
 
   bool _isPlaying = false;
   bool _isLiked = false;
@@ -121,6 +123,15 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
     _loadSongDetail();
   }
+
+  String _cleanLyrics(String raw) {
+    return raw
+        .replaceAll(RegExp(r'\[\d{2}:\d{2}\.\d{2}\]'), '')
+        .replaceAll(RegExp(r'\[[a-zA-Z]+:.*?\]'), '')
+        .replaceAll(RegExp(r'\n{2,}'), '\n')
+        .trim();
+  }
+
 
 
 
@@ -393,7 +404,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
-  void _showLyrics() {
+  void _showLyrics() async {
+    if (_lyrics == null) {
+      await _loadLyrics();
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black,
@@ -404,11 +419,39 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: Text(
-            _song?.lyrics ?? 'Chưa có lời bài hát',
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
+            _lyrics != null && _lyrics!.isNotEmpty
+                ? _cleanLyrics(_lyrics!)
+                : 'Chưa có lời bài hát',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              height: 1.6,
+            ),
           ),
         ),
       ),
     );
   }
+
+
+  Future<void> _loadLyrics() async {
+    if (_song == null) return;
+
+    try {
+      final raw = await SongService.getLyricsBySongId(_song!.id);
+
+      if (!mounted) return;
+
+      setState(() {
+        _lyrics = raw;
+      });
+    } catch (e) {
+      debugPrint('❌ Load lyrics error: $e');
+      _lyrics = null;
+    }
+  }
+
+
+
 }

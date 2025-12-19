@@ -90,4 +90,17 @@ class SongService {
       );
     }
   }
+
+  static Future<String?> getLyricsBySongId(int songId) async {
+    final url = Uri.parse('$_baseUrl/api/lyrics/$songId');
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['lyrics'];
+    } else {
+      throw Exception('Failed to load lyrics');
+    }
+  }
 }
