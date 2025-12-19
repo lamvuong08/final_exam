@@ -20,7 +20,7 @@ class SongService {
 
   static Future<void> likeSong(int songId, int userId) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/api/user/$userId/song/$songId/like'),
+      Uri.parse('$_baseUrl/api/songs/user/$userId/song/$songId/like'),
       headers: {'Content-Type': 'application/json'},
     );
 
@@ -31,7 +31,7 @@ class SongService {
 
   static Future<void> unlikeSong(int songId, int userId) async {
     final response = await http.delete(
-      Uri.parse('$_baseUrl/api/user/$userId/song/$songId/like'),
+      Uri.parse('$_baseUrl/api/songs/user/$userId/song/$songId/like'),
     );
 
     if (response.statusCode != 200) {
@@ -41,7 +41,7 @@ class SongService {
 
   static Future<bool> isSongLiked(int songId, int userId) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/api/user/$userId/song/$songId/like/check'),
+      Uri.parse('$_baseUrl/api/songs/user/$userId/song/$songId/like/check'),
     );
 
     if (response.statusCode == 200) {
@@ -75,6 +75,7 @@ class SongService {
       );
     }
   }
+
   static Future<Song> getSongById(int songId) async {
     final response = await http.get(
       Uri.parse('$_baseUrl/api/songs/$songId'),
@@ -89,5 +90,4 @@ class SongService {
       );
     }
   }
-
 }

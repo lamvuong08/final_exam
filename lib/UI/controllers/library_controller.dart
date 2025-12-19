@@ -1,10 +1,12 @@
+// lib/controllers/library_controller.dart
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // Thêm dòng này
 import 'package:http/http.dart' as http;
 import '../models/album.dart';
 import '../models/song.dart';
 import '../models/artist.dart';
 
-class LibraryController {
+class LibraryController with ChangeNotifier { // ✅ Thay đổi từ class LibraryController thành class LibraryController with ChangeNotifier
   List<Song> songs = [];
   List<Artist> artists = [];
   List<Album> albums = [];
@@ -12,12 +14,23 @@ class LibraryController {
 
   static const String baseUrl = 'http://10.0.2.2:8080/api';
 
-  // 👇 Thêm headers chống cache
   final Map<String, String> _noCacheHeaders = {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0',
   };
+
+  void addLikedSong(Song song) {
+    if (!songs.any((s) => s.id == song.id)) {
+      songs.insert(0, song);
+      notifyListeners(); // ✅ Gọi notifyListeners để cập nhật giao diện
+    }
+  }
+
+  void removeLikedSong(int songId) {
+    songs.removeWhere((s) => s.id == songId);
+    notifyListeners(); // ✅ Gọi notifyListeners để cập nhật giao diện
+  }
 
   Future<void> loadLibrary(int userId) async {
     await Future.wait([
@@ -26,12 +39,13 @@ class LibraryController {
       _loadFollowedAlbums(userId),
       _loadPlaylists(userId),
     ]);
+    notifyListeners(); // ✅ Gọi notifyListeners sau khi load xong
   }
 
   Future<void> _loadLikedSongs(int userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/user/$userId/liked-songs'),
-      headers: _noCacheHeaders, // 👈 THÊM
+      headers: _noCacheHeaders,
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -42,7 +56,7 @@ class LibraryController {
   Future<void> _loadFollowedArtists(int userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/user/$userId/library/artists'),
-      headers: _noCacheHeaders, // 👈 THÊM
+      headers: _noCacheHeaders,
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -55,7 +69,7 @@ class LibraryController {
   Future<void> _loadFollowedAlbums(int userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/user/$userId/library/albums'),
-      headers: _noCacheHeaders, // 👈 THÊM
+      headers: _noCacheHeaders,
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -68,7 +82,7 @@ class LibraryController {
   Future<void> _loadPlaylists(int userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/user/$userId/playlists'),
-      headers: _noCacheHeaders, // 👈 THÊM
+      headers: _noCacheHeaders,
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -76,7 +90,6 @@ class LibraryController {
     }
   }
 
-  // 👇 Chi tiết album/artist — cũng nên chống cache
   Future<Album> fetchAlbumDetail(int albumId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/albums/$albumId'),

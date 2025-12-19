@@ -9,22 +9,60 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/songs")
 @CrossOrigin(origins = "*")
 public class SongController {
 
     @Autowired
     private SongService songService;
 
-    @GetMapping("/songs/artist/{artistId}")
+    @GetMapping("/random")
+    public ResponseEntity<List<SongResponse>> getRandomSongs(@RequestParam(defaultValue = "1") int count) {
+        List<SongResponse> songs = songService.getRandomSongs(count);
+        return ResponseEntity.ok(songs);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SongResponse> getSongById(@PathVariable Long id) {
+        SongResponse song = songService.getSongById(id);
+        return ResponseEntity.ok(song);
+    }
+
+    @GetMapping("/album/{albumId}")
+    public ResponseEntity<List<SongResponse>> getSongsByAlbum(@PathVariable Long albumId) {
+        List<SongResponse> songs = songService.getSongsByAlbum(albumId);
+        return ResponseEntity.ok(songs);
+    }
+
+    @GetMapping("/recently-played")
+    public ResponseEntity<List<SongResponse>> getRecentlyPlayedSongs(@RequestParam Long userId) {
+        List<SongResponse> songs = songService.getRecentlyPlayedSongs(userId);
+        return ResponseEntity.ok(songs);
+    }
+
+    // --- Các endpoint cũ ---
+    @GetMapping("/trending")
+    public ResponseEntity<List<SongResponse>> getTrendingSongs() {
+        List<SongResponse> songs = songService.getTrendingSongs();
+        return ResponseEntity.ok(songs);
+    }
+
+    @GetMapping("/new-music-message")
+    public ResponseEntity<String> getNewMusicMessage() {
+        String message = songService.getNewMusicMessage();
+        return ResponseEntity.ok(message);
+    }
+
+    @GetMapping("/artist/{artistId}")
     public ResponseEntity<List<SongResponse>> getSongsByArtist(@PathVariable Long artistId) {
-        try {
-            List<SongResponse> songs = songService.getSongsByArtistId(artistId);
-            return ResponseEntity.ok(songs);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
-        }
+        List<SongResponse> songs = songService.getSongsByArtistId(artistId);
+        return ResponseEntity.ok(songs);
+    }
+
+    @GetMapping("/album/{albumId}/songs")
+    public ResponseEntity<List<SongResponse>> getSongsInAlbum(@PathVariable Long albumId) {
+        List<SongResponse> songs = songService.getSongsByAlbumId(albumId);
+        return ResponseEntity.ok(songs);
     }
 
     @PostMapping("/user/{userId}/song/{songId}/like")
@@ -41,12 +79,7 @@ public class SongController {
 
     @GetMapping("/user/{userId}/song/{songId}/like/check")
     public ResponseEntity<Boolean> isSongLiked(@PathVariable Long userId, @PathVariable Long songId) {
-        return ResponseEntity.ok(songService.isSongLiked(userId, songId));
+        boolean isLiked = songService.isSongLiked(userId, songId);
+        return ResponseEntity.ok(isLiked);
     }
-    @GetMapping("/songs/{id}")
-    public ResponseEntity<SongResponse> getSongById(@PathVariable Long id) {
-        SongResponse song = songService.getSongById(id);
-        return ResponseEntity.ok(song);
-    }
-
 }

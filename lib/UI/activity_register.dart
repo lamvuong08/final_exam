@@ -54,19 +54,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48), // Spacer để cân bằng
+                  const SizedBox(width: 48),
                 ],
               ),
               const SizedBox(height: 24),
 
-              // ScrollView cho form
               Expanded(
                 child: SingleChildScrollView(
                   child: Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Tên người dùng
                         _buildTextField(
                           controller: _usernameController,
                           hintText: 'Tên người dùng',
@@ -74,7 +72,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Email
                         _buildTextField(
                           controller: _emailController,
                           hintText: 'Email',
@@ -82,7 +79,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Mật khẩu
                         _buildPasswordField(
                           controller: _passwordController,
                           hintText: 'Mật khẩu',
@@ -95,7 +91,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Xác nhận mật khẩu
                         _buildPasswordField(
                           controller: _confirmPasswordController,
                           hintText: 'Xác nhận mật khẩu',
@@ -108,7 +103,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Checkbox điều khoản
                         Row(
                           children: [
                             Checkbox(
@@ -140,7 +134,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
 
-              // Nút Đăng ký
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -149,7 +142,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       final authService = AuthService();
 
                       try {
-                        // dùng named parameters, nhận về Map
                         final response = await authService.register(
                           username: _usernameController.text.trim(),
                           email: _emailController.text.trim(),
@@ -157,8 +149,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         );
                         if (!context.mounted) return;
 
-                        // kiểm tra thành công dựa vào backend trả về
-                        if (response['success'] == true) { // giả sử backend trả về key 'success'
+                        if (response['success'] == true) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Đăng ký thành công!')),
                           );
@@ -199,7 +190,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
 
-              // Liên kết "Đã có tài khoản? Đăng nhập"
               TextButton(
                 onPressed: () {
                   Navigator.of(context).push(
@@ -222,7 +212,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // Hàm tạo TextField thường
   Widget _buildTextField({
     required TextEditingController controller,
     required String hintText,
@@ -256,7 +245,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // Hàm tạo TextField mật khẩu (có toggle visibility)
   Widget _buildPasswordField({
     required TextEditingController controller,
     required String hintText,

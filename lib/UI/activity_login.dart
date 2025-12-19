@@ -155,11 +155,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 await prefs.setBool('is_logged_in', true);
 
                                 if (!context.mounted) return;
-                                // Truyền userId vào MainScreen
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => MainScreen(userId: userData['id']),
+                                    builder: (context) => MainScreen(
+                                      userId: userData['id'],
+                                    ),
                                   ),
                                 );
                               } else {
@@ -206,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const MainScreen(userId: 0), // guest
+                              builder: (context) => const MainScreen(userId: 0),
                             ),
                           );
                         },

@@ -54,9 +54,9 @@ public class Content {
     @ManyToMany(mappedBy = "likedContents")
     private Set<User> likedByUsers = new HashSet<>();
 
-    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
-    private List<PlayHistory> playHistory = new ArrayList<>();
+//    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonBackReference
+//    private List<PlayHistory> playHistory = new ArrayList<>();
 
     @Column(name = "play_count")
     private Long playCount = 0L;

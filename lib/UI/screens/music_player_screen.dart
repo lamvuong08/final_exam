@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
 import '../../api/song_service.dart';
+import '../controllers/library_controller.dart';
 import '../models/song.dart';
 
 class MusicPlayerScreen extends StatefulWidget {
@@ -147,8 +149,12 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     try {
       if (_isLiked) {
         await SongService.unlikeSong(_song!.id, widget.userId);
+        if (!mounted) return;
+        Provider.of<LibraryController>(context, listen: false).removeLikedSong(_song!.id);
       } else {
         await SongService.likeSong(_song!.id, widget.userId);
+        if (!mounted) return;
+        Provider.of<LibraryController>(context, listen: false).addLikedSong(_song!);
       }
 
       if (!mounted) return;
@@ -179,9 +185,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     super.dispose();
   }
 
-  String _fmt(Duration d) =>
-      '${d.inMinutes.remainder(60).toString().padLeft(2, '0')}:'
-          '${d.inSeconds.remainder(60).toString().padLeft(2, '0')}';
+  String _fmt(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,12 +224,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 width: 280,
                 height: 280,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   width: 280,
                   height: 280,
                   color: Colors.deepPurple.withAlpha(40),
-                  child: const Icon(Icons.music_note,
-                      size: 80, color: Colors.white),
+                  child: const Icon(Icons.music_note, size: 80, color: Colors.white),
                 ),
               ),
             ),
@@ -230,9 +237,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               _song?.title ?? '',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -242,19 +250,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             const SizedBox(height: 24),
             Slider(
               value: _position.inSeconds.toDouble(),
-              max: _duration.inSeconds > 0
-                  ? _duration.inSeconds.toDouble()
-                  : 1,
-              onChanged: (v) =>
-                  _player.seek(Duration(seconds: v.toInt())),
+              max: _duration.inSeconds > 0 ? _duration.inSeconds.toDouble() : 1,
+              onChanged: (v) => _player.seek(Duration(seconds: v.toInt())),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_fmt(_position),
-                    style: const TextStyle(color: Colors.white70)),
-                Text(_fmt(_duration),
-                    style: const TextStyle(color: Colors.white70)),
+                Text(_fmt(_position), style: const TextStyle(color: Colors.white70)),
+                Text(_fmt(_duration), style: const TextStyle(color: Colors.white70)),
               ],
             ),
             const SizedBox(height: 10),
@@ -268,16 +271,12 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 ),
                 IconButton(
                   icon: Icon(
-                    _isPlaying
-                        ? Icons.pause_circle_filled
-                        : Icons.play_circle_filled,
+                    _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
                     size: 72,
                   ),
                   color: Colors.white,
                   onPressed: () async {
-                    _isPlaying
-                        ? await _player.pause()
-                        : await _player.resume();
+                    _isPlaying ? await _player.pause() : await _player.resume();
                   },
                 ),
                 IconButton(
@@ -299,9 +298,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                       : Icon(
-                    _isLiked
-                        ? Icons.favorite
-                        : Icons.favorite_border,
+                    _isLiked ? Icons.favorite : Icons.favorite_border,
                     color: _isLiked ? Colors.red : Colors.white,
                   ),
                   onPressed: _toggleLike,

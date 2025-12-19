@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../utils/library_refresh_notifier.dart';
-import '../controllers/library_controller.dart';
-import '../models/album.dart';
-import '../models/song.dart';
-import '../screens/Detail_Album_Screen.dart';
-import '../screens/Detail_Artist_Screen.dart';
 import '../../utils/user_utils.dart';
+import '../controllers/library_controller.dart';
+import 'detail_album_screen.dart';
+import 'detail_artist_screen.dart';
+import 'music_player_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -15,7 +15,7 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  final LibraryController controller = LibraryController();
+  bool showLikedSongsAsPlaylist = false;
   bool loading = true;
   int tabIndex = 0;
   int? userId;
@@ -40,19 +40,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _loadUserIdAndData() async {
-    userId = await UserUtils.getUserId();
-    if (userId != null) {
-      await loadData();
-    } else {
-      if (mounted) {
-        setState(() => loading = false);
-      }
-    }
-  }
+    final controller = Provider.of<LibraryController>(context, listen: false);
+    final fetchedUserId = await UserUtils.getUserId();
 
-  Future<void> loadData() async {
-    if (userId == null) return;
-    await controller.loadLibrary(userId!);
+    if (fetchedUserId != null && mounted) {
+      userId = fetchedUserId;
+      await controller.loadLibrary(userId!);
+    }
+
     if (mounted) {
       setState(() => loading = false);
     }
@@ -63,6 +58,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (mounted) {
       setState(() => loading = true);
     }
+    final controller = Provider.of<LibraryController>(context, listen: false);
     await controller.loadLibrary(userId!);
     if (mounted) {
       setState(() => loading = false);
@@ -71,6 +67,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<LibraryController>(context);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -101,10 +99,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
               Expanded(
                 child: ListView(
                   children: [
-                    if (tabIndex == 0) ..._buildDefaultView(),
-                    if (tabIndex == 1) ..._buildPlaylists(),
-                    if (tabIndex == 2) ..._buildArtists(),
-                    if (tabIndex == 3) ..._buildAlbums(),
+                    if (tabIndex == 0) ..._buildDefaultView(controller),
+                    if (tabIndex == 1) ..._buildPlaylists(controller),
+                    if (tabIndex == 2) ..._buildArtists(controller),
+                    if (tabIndex == 3) ..._buildAlbums(controller),
                     if (tabIndex == 4) ..._buildPodcasts(),
                   ],
                 ),
@@ -140,7 +138,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  List<Widget> _buildDefaultView() {
+  List<Widget> _buildDefaultView(LibraryController controller) {
     return [
       const Text(
         "Your Library",
@@ -151,7 +149,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ),
       ),
       const SizedBox(height: 16),
-      _likedSongsTile(),
+      _likedSongsTile(controller),
       if (controller.songs.isNotEmpty) const SizedBox(height: 12),
       if (controller.artists.isNotEmpty)
         _librarySectionTile(
@@ -173,13 +171,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
     ];
   }
 
-  Widget _likedSongsTile() {
+  Widget _likedSongsTile(LibraryController controller) {
     return ListTile(
       leading: Container(
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.purple.withOpacity(0.3),
+          color: Colors.purple.withAlpha(77),
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Icon(Icons.favorite, color: Colors.red),
@@ -189,14 +187,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
       subtitle: controller.songs.isEmpty
-          ? const Text("No liked songs yet",
-          style: TextStyle(color: Colors.white70))
-          : Text("${controller.songs.length} songs",
-          style: const TextStyle(color: Colors.white70)),
+          ? const Text("No liked songs yet", style: TextStyle(color: Colors.white70))
+          : Text("${controller.songs.length} songs", style: const TextStyle(color: Colors.white70)),
       trailing: const Icon(Icons.chevron_right, color: Colors.white70),
       onTap: () {
-        setState(() => tabIndex = 1);
+        setState(() {
+          tabIndex = 1;
+          showLikedSongsAsPlaylist = true;
+        });
       },
+
     );
   }
 
@@ -213,15 +213,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.3),
+          color: iconColor.withAlpha(77),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: iconColor),
       ),
       title: Text(
         title,
-        style:
-        const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
         "$count ${title.toLowerCase()}",
@@ -238,7 +237,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withAlpha(77),
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Icon(Icons.notifications, color: Colors.green),
@@ -247,8 +246,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         "New Episodes",
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
-      subtitle:
-      const Text("Updated recently", style: TextStyle(color: Colors.white70)),
+      subtitle: const Text("Updated recently", style: TextStyle(color: Colors.white70)),
       trailing: const Icon(Icons.chevron_right, color: Colors.white70),
       onTap: () {
         setState(() => tabIndex = 4);
@@ -256,29 +254,116 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  List<Widget> _buildPlaylists() {
+  List<Widget> _buildPlaylists(LibraryController controller) {
+    if (showLikedSongsAsPlaylist) {
+      return [
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  showLikedSongsAsPlaylist = false;
+                });
+              },
+            ),
+            const Text(
+              "Liked Songs",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (controller.songs.isEmpty)
+          const Text(
+            "Chưa có bài hát nào được yêu thích",
+            style: TextStyle(color: Colors.white70),
+          ),
+
+        ...controller.songs.map((song) {
+          return ListTile(
+            leading: const Icon(Icons.music_note, color: Colors.white),
+            title: Text(
+              song.title,
+              style: const TextStyle(color: Colors.white),
+            ),
+            subtitle: Text(
+              song.artist?.name ?? "Nghệ sĩ ẩn danh",
+              style: const TextStyle(color: Colors.white70),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MusicPlayerScreen(
+                    initialSong: song,
+                    playlist: controller.songs,
+                    startIndex: controller.songs.indexOf(song),
+                    userId: userId!,
+                  ),
+                ),
+              );
+            },
+
+          );
+        })
+      ];
+    }
+
     return [
-      const Text("Playlists",
-          style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+      const Text(
+        "Playlists",
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
       const SizedBox(height: 16),
+
+      ListTile(
+        leading: const Icon(Icons.favorite, color: Colors.red),
+        title: const Text(
+          "Liked Songs",
+          style: TextStyle(color: Colors.white),
+        ),
+        subtitle: Text(
+          "${controller.songs.length} bài",
+          style: const TextStyle(color: Colors.white70),
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white70),
+        onTap: () {
+          setState(() {
+            showLikedSongsAsPlaylist = true;
+          });
+        },
+      ),
+
+      const SizedBox(height: 12),
+
       ...controller.playlists.map((playlist) {
         return ListTile(
           leading: const Icon(Icons.playlist_play, color: Colors.white),
-          title: Text(playlist['name'] as String,
-              style: const TextStyle(color: Colors.white)),
-          subtitle: Text("${playlist['songCount']} bài",
-              style: const TextStyle(color: Colors.white70)),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white70),
-          onTap: () {
-            setState(() => tabIndex = 0);
-          },
+          title: Text(
+            playlist['name'],
+            style: const TextStyle(color: Colors.white),
+          ),
+          subtitle: Text(
+            "${playlist['songCount']} bài",
+            style: const TextStyle(color: Colors.white70),
+          ),
         );
-      }).toList(),
+      })
     ];
   }
 
-  List<Widget> _buildArtists() {
+
+  List<Widget> _buildArtists(LibraryController controller) {
     return [
       const Text(
           "Artists",
@@ -292,7 +377,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ...controller.artists.map((artist) {
         String imageUrl = artist.profileImage != null
             ? 'http://10.0.2.2:8080/uploads/${artist.profileImage}'
-            : 'https://via.placeholder.com/50';
+            : 'https://via.placeholder.com/50  ';
 
         return ListTile(
           leading: CircleAvatar(backgroundImage: NetworkImage(imageUrl)),
@@ -311,16 +396,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
               ),
             ).then((_) async {
-              await _reloadLibrary();  // reload sau khi pop
             });
           },
         );
-      }).toList(),
+      })
     ];
   }
 
-
-  List<Widget> _buildAlbums() {
+  List<Widget> _buildAlbums(LibraryController controller) {
     return [
       const Text(
           "Albums",
@@ -334,7 +417,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ...controller.albums.map((album) {
         String coverUrl = album.coverImage != null
             ? 'http://10.0.2.2:8080/uploads/${album.coverImage}'
-            : 'https://via.placeholder.com/50';
+            : 'https://via.placeholder.com/50  ';
 
         return ListTile(
           leading: ClipRRect(
@@ -360,14 +443,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
               ),
             ).then((_) async {
-              await _reloadLibrary();
             });
           },
         );
-      }).toList(),
+      })
     ];
   }
-
 
   List<Widget> _buildPodcasts() {
     return [
@@ -386,15 +467,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.3),
+              color: Colors.orange.withAlpha(77),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(Icons.mic, color: Colors.orange),
           ),
-          title:
-          Text("Podcast $index", style: const TextStyle(color: Colors.white)),
-          subtitle:
-          const Text("Host Name", style: TextStyle(color: Colors.white70)),
+          title: Text("Podcast $index", style: const TextStyle(color: Colors.white)),
+          subtitle: const Text("Host Name", style: TextStyle(color: Colors.white70)),
           trailing: const Icon(Icons.chevron_right, color: Colors.white70),
         );
       }),

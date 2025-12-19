@@ -54,7 +54,7 @@ class LoginOptionsScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1DB954), // spotify_green
+                    backgroundColor: Color(0xFF1DB954),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -64,7 +64,6 @@ class LoginOptionsScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Tiếp tục bằng số điện thoại
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -90,7 +89,7 @@ class LoginOptionsScreen extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              const SizedBox(height: 32), // Khoảng cách từ nội dung đến đáy
+              const SizedBox(height: 32),
             ],
           ),
         ),

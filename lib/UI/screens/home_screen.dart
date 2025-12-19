@@ -143,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 55,
             height: 55,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (context, error, stackTrace) => Container(
               width: 55,
               height: 55,
               color: Colors.deepPurple.withAlpha(40),

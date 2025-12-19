@@ -14,7 +14,6 @@ class Artist {
   }
 
   factory Artist.fromJsonDetail(Map<String, dynamic> json) {
-    List<dynamic>? songsJson = json['songs'];
     return Artist(
       id: json['id'] as int? ?? -1,
       name: json['name'] ?? 'Nghệ sĩ ẩn danh',

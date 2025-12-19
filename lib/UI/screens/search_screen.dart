@@ -9,8 +9,8 @@ import '../../utils/user_utils.dart';
 import '../models/album.dart';
 import '../models/artist.dart';
 import '../models/song.dart';
-import 'Detail_Album_Screen.dart';
-import 'Detail_Artist_Screen.dart';
+import 'detail_album_screen.dart';
+import 'detail_artist_screen.dart';
 import 'music_player_screen.dart';
 
 class SearchScreen extends StatefulWidget {

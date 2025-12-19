@@ -3,7 +3,7 @@ import '../api/auth_service.dart';
 import 'activity_login.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
-  final String email; // Có thể truyền email từ màn hình OTP nếu cần
+  final String email;
 
   const ChangePasswordScreen({super.key, this.email = ''});
 
@@ -47,8 +47,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   style: TextStyle(color: Colors.white70, fontSize: 16),
                 ),
                 const SizedBox(height: 32),
-
-                // Mật khẩu mới
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -90,8 +88,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-
-                // Nhập lại mật khẩu
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
@@ -132,19 +128,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Nút xác nhận
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
-                      // 1. Validate form (mật khẩu)
                       if (_formKey.currentState?.validate() != true) return;
 
-                      // 2. Lấy dữ liệu
                       final email = widget.email.trim();
                       final newPassword = _passwordController.text.trim();
 
-                      // 3. Kiểm tra email có được truyền và hợp lệ không
                       if (email.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -155,7 +147,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         return;
                       }
 
-                      // 4. Gọi API
                       try {
                         final authService = AuthService();
                         final response = await authService.changePassword(
@@ -171,7 +162,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               backgroundColor: Colors.green,
                             ),
                           );
-                          // Quay về màn hình sau khi hoàn thành đổi mật khẩu
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (context) => const LoginScreen()),

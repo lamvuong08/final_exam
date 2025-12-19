@@ -180,7 +180,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
-  // Gửi mã OTP (lần đầu)
   void _sendOtp() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -192,13 +191,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _errorMessage = null;
     });
 
-    // Gọi API
     final result = await ApiClient.sendOtp(email);
 
     if (!mounted) return;
 
     if (result['success']) {
-      // Thành công → chỉ hiển thị SnackBar nhẹ (không đè)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
@@ -211,7 +208,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  // Gửi lại mã OTP
   void _resendOtp() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -239,7 +235,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  // Xác thực OTP và chuyển trang
   void _verifyOtp() async {
     final email = _emailController.text.trim();
     final otp = _otpController.text.trim();
@@ -262,7 +257,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (!mounted) return;
 
     if (result['success']) {
-      // OTP đúng → Chuyển sang màn hình đổi mật khẩu
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

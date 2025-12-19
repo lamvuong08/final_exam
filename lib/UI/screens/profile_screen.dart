@@ -26,12 +26,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = prefs.getInt('user_id');
 
     if (userId == null) {
-      if (!context.mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-      );
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
       return;
     }
 
@@ -49,12 +46,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi tải profile: $e')),
       );
-      setState(() {
-        loading = false;
-      });
+      setState(() => loading = false);
     }
   }
 

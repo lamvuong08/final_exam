@@ -121,6 +121,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
             playlist: songs,
             startIndex: 0,
             userId: widget.userId,
+            // ✅ Không cần truyền libraryController nữa
           ),
         ),
       );
@@ -136,10 +137,11 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   /// ================= UI =================
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
         Navigator.pop(context, _hasChanges);
-        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -166,7 +168,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                       image: NetworkImage(
                         widget.album.coverImage != null
                             ? 'http://10.0.2.2:8080/uploads/${widget.album.coverImage}'
-                            : 'https://via.placeholder.com/300?text=Album',
+                            : 'https://via.placeholder.com/300?text=Album  ',
                       ),
                     ),
                   ),

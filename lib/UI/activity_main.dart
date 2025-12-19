@@ -23,7 +23,7 @@ class ProfileWrapper extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  final int userId; // userId từ login
+  final int userId;
   const MainScreen({super.key, required this.userId});
 
   @override
@@ -39,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _screens = [
-      HomeScreen(userId: widget.userId), // Truyền userId vào HomeScreen
+      HomeScreen(userId: widget.userId),
       const SearchScreen(),
       const LibraryWrapper(),
       const ProfileWrapper(),
