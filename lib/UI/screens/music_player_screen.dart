@@ -40,10 +40,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   int _currentIndex = 0;
 
-  Song get _baseSong =>
-      widget.playlist != null
-          ? widget.playlist![_currentIndex]
-          : widget.initialSong;
+  Song get _baseSong => _queue[_currentIndex];
 
   @override
   void initState() {
@@ -53,6 +50,80 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     _setupListeners();
     _loadSongDetail();
   }
+
+  List<Song> get _queue {
+    if (widget.playlist != null && widget.playlist!.isNotEmpty) {
+      return widget.playlist!;
+    }
+    return [widget.initialSong];
+  }
+
+
+  void _showQueue() {
+    final queue = _queue;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: ListView.builder(
+            itemCount: queue.length,
+            itemBuilder: (context, index) {
+              final song = queue[index];
+              final isPlaying = index == _currentIndex;
+
+              return ListTile(
+                leading: Icon(
+                  isPlaying ? Icons.equalizer : Icons.music_note,
+                  color: isPlaying ? Colors.greenAccent : Colors.white70,
+                ),
+                title: Text(
+                  song.title ?? '',
+                  style: TextStyle(
+                    color: isPlaying ? Colors.greenAccent : Colors.white,
+                    fontWeight:
+                    isPlaying ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                subtitle: Text(
+                  song.artist?.name ?? '',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _playFromQueue(index);
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+
+  void _playFromQueue(int index) {
+    if (index < 0 || index >= widget.playlist!.length) return;
+
+    setState(() {
+      _currentIndex = index;
+      _song = null;
+      _loadingSong = true;
+      _isLiked = false;
+      _duration = Duration.zero;
+      _position = Duration.zero;
+    });
+
+    _loadSongDetail();
+  }
+
+
+
 
   void _setupListeners() {
     _player.onDurationChanged.listen((d) {
@@ -101,23 +172,26 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 
   Future<void> _playNext() async {
-    if (widget.playlist == null || widget.playlist!.isEmpty) return;
-    _currentIndex = (_currentIndex + 1) % widget.playlist!.length;
+    final queue = _queue;
+    if (queue.isEmpty) return;
+
+    _currentIndex = (_currentIndex + 1) % queue.length;
     _reloadSong();
   }
 
   Future<void> _playPrevious() async {
-    if (widget.playlist == null || widget.playlist!.isEmpty) return;
+    final queue = _queue;
+    if (queue.isEmpty) return;
 
     if (_position.inSeconds > 3) {
       await _player.seek(Duration.zero);
     } else {
       _currentIndex =
-          (_currentIndex - 1 + widget.playlist!.length) %
-              widget.playlist!.length;
+          (_currentIndex - 1 + queue.length) % queue.length;
       _reloadSong();
     }
   }
+
 
   void _reloadSong() {
     setState(() {
@@ -146,18 +220,18 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
     setState(() => _loadingLike = true);
 
+    final libraryController =
+    Provider.of<LibraryController>(context, listen: false);
+
     try {
       if (_isLiked) {
-        await SongService.unlikeSong(_song!.id, widget.userId);
-        if (!mounted) return;
-        Provider.of<LibraryController>(context, listen: false).removeLikedSong(_song!.id);
+        await libraryController.unlikeSong(widget.userId, _song!.id);
       } else {
-        await SongService.likeSong(_song!.id, widget.userId);
-        if (!mounted) return;
-        Provider.of<LibraryController>(context, listen: false).addLikedSong(_song!);
+        await libraryController.likeSong(widget.userId, _song!);
       }
 
       if (!mounted) return;
+
       setState(() => _isLiked = !_isLiked);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,6 +252,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       if (mounted) setState(() => _loadingLike = false);
     }
   }
+
 
   @override
   void dispose() {
@@ -209,7 +284,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.queue_music),
-            onPressed: () {},
+            onPressed: _showQueue,
           )
         ],
       ),

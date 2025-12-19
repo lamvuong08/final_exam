@@ -4,8 +4,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:async/async.dart';
+import 'package:provider/provider.dart';
 import '../../utils/user_utils.dart';
 
+import '../controllers/library_controller.dart';
 import '../models/album.dart';
 import '../models/artist.dart';
 import '../models/song.dart';
@@ -188,7 +190,8 @@ class _SearchScreenState extends State<SearchScreen> {
               leading: const Icon(Icons.person, color: Colors.grey),
               title: Text(artist.name, style: const TextStyle(color: Colors.white)),
               onTap: () {
-                if (_userId == null) return; // đảm bảo userId có giá trị
+                if (_userId == null) return;
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -225,19 +228,29 @@ class _SearchScreenState extends State<SearchScreen> {
           _sectionTitle('Bài hát'),
           ...songs.map((item) {
             if (item is! Map<String, dynamic>) return const SizedBox();
-            final song = Song.fromJsonBrief(item);
+
+            final Song song = Song.fromJsonBrief(item);
+
             return ListTile(
               leading: const Icon(Icons.music_note, color: Colors.grey),
               title: Text(song.title, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 if (_userId == null) return;
+
+                final libraryController =
+                Provider.of<LibraryController>(context, listen: false);
+
+                libraryController.addToQueue(song);
+
+                final queue = libraryController.playQueue;
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => MusicPlayerScreen(
                       initialSong: song,
-                      playlist: null,
-                      startIndex: 0,
+                      playlist: queue,
+                      startIndex: queue.length - 1,
                       userId: _userId!,
                     ),
                   ),

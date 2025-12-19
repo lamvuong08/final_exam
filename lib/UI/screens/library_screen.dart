@@ -150,7 +150,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
       const SizedBox(height: 16),
       _likedSongsTile(controller),
-      if (controller.songs.isNotEmpty) const SizedBox(height: 12),
+      if (controller.likedSongs.isNotEmpty) const SizedBox(height: 12),
       if (controller.artists.isNotEmpty)
         _librarySectionTile(
           icon: Icons.person,
@@ -186,9 +186,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
         "Liked Songs",
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
-      subtitle: controller.songs.isEmpty
+      subtitle: controller.likedSongs.isEmpty
           ? const Text("No liked songs yet", style: TextStyle(color: Colors.white70))
-          : Text("${controller.songs.length} songs", style: const TextStyle(color: Colors.white70)),
+          : Text("${controller.likedSongs.length} songs", style: const TextStyle(color: Colors.white70)),
       trailing: const Icon(Icons.chevron_right, color: Colors.white70),
       onTap: () {
         setState(() {
@@ -279,13 +279,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ),
         const SizedBox(height: 16),
 
-        if (controller.songs.isEmpty)
+        if (controller.likedSongs.isEmpty)
           const Text(
             "Chưa có bài hát nào được yêu thích",
             style: TextStyle(color: Colors.white70),
           ),
 
-        ...controller.songs.map((song) {
+        ...controller.likedSongs.map((song) {
           return ListTile(
             leading: const Icon(Icons.music_note, color: Colors.white),
             title: Text(
@@ -302,8 +302,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 MaterialPageRoute(
                   builder: (_) => MusicPlayerScreen(
                     initialSong: song,
-                    playlist: controller.songs,
-                    startIndex: controller.songs.indexOf(song),
+                    playlist: controller.likedSongs,
+                    startIndex: controller.likedSongs.indexOf(song),
                     userId: userId!,
                   ),
                 ),
@@ -333,7 +333,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           style: TextStyle(color: Colors.white),
         ),
         subtitle: Text(
-          "${controller.songs.length} bài",
+          "${controller.likedSongs.length} bài",
           style: const TextStyle(color: Colors.white70),
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.white70),
