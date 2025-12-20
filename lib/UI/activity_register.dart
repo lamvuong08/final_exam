@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../api/auth_service.dart';
-
 import 'activity_login.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -23,83 +22,100 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double w = MediaQuery.of(context).size.width;
+    final double paddingAll = w * 0.05;
+    final double fontSizeTitle = w * 0.05;
+    final double fontSizeBody = w * 0.04;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Back button + Title
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    iconSize: 24,
-                    padding: EdgeInsets.zero,
-                  ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Đăng ký',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: _formKey,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: EdgeInsets.all(paddingAll),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTextField(
-                          controller: _usernameController,
-                          hintText: 'Tên người dùng',
-                          keyboardType: TextInputType.text,
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              icon: Icon(Icons.arrow_back, color: Colors.white, size: fontSizeTitle),
+                              padding: EdgeInsets.zero,
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  'Đăng ký',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: fontSizeTitle,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 48),
+                          ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                children: [
+                                  _buildTextField(
+                                    controller: _usernameController,
+                                    hintText: 'Tên người dùng',
+                                    keyboardType: TextInputType.text,
+                                    fontSizeBody: fontSizeBody,
+                                  ),
+                                  const SizedBox(height: 16),
 
-                        _buildTextField(
-                          controller: _emailController,
-                          hintText: 'Email',
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 16),
+                                  _buildTextField(
+                                    controller: _emailController,
+                                    hintText: 'Email',
+                                    keyboardType: TextInputType.emailAddress,
+                                    fontSizeBody: fontSizeBody,
+                                  ),
+                                  const SizedBox(height: 16),
 
-                        _buildPasswordField(
-                          controller: _passwordController,
-                          hintText: 'Mật khẩu',
-                          obscureText: _obscurePassword,
-                          onToggle: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
+                                  _buildPasswordField(
+                                    controller: _passwordController,
+                                    hintText: 'Mật khẩu',
+                                    obscureText: _obscurePassword,
+                                    fontSizeBody: fontSizeBody,
+                                    onToggle: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
 
-                        _buildPasswordField(
-                          controller: _confirmPasswordController,
-                          hintText: 'Xác nhận mật khẩu',
-                          obscureText: _obscureConfirmPassword,
-                          onToggle: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
+                                  _buildPasswordField(
+                                    controller: _confirmPasswordController,
+                                    hintText: 'Xác nhận mật khẩu',
+                                    obscureText: _obscureConfirmPassword,
+                                    fontSizeBody: fontSizeBody,
+                                    onToggle: () {
+                                      setState(() {
+                                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 24),
 
@@ -118,95 +134,97 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             Expanded(
                               child: Text(
                                 'Tôi đồng ý với các điều khoản và điều kiện',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 14,
+                                  fontSize: fontSizeBody,
                                 ),
                                 softWrap: true,
                               ),
                             ),
                           ],
                         ),
+
                         const SizedBox(height: 24),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              if (_formKey.currentState?.validate() == true && _acceptedTerms) {
+                                final authService = AuthService();
+
+                                try {
+                                  final response = await authService.register(
+                                    username: _usernameController.text.trim(),
+                                    email: _emailController.text.trim(),
+                                    password: _passwordController.text.trim(),
+                                  );
+                                  if (!context.mounted) return;
+
+                                  if (response['success'] == true) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Đăng ký thành công!')),
+                                    );
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Đăng ký thất bại: ${response['message'] ?? ''}')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Lỗi: $e')),
+                                  );
+                                }
+                              } else if (!_acceptedTerms) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Vui lòng đồng ý điều khoản')),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1DB954),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            child: Text(
+                              'Đăng ký',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: fontSizeBody,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (context) => const LoginScreen()),
+                            );
+                          },
+                          child: Text(
+                            'Đã có tài khoản? Đăng nhập',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: fontSizeBody * 0.85,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (_formKey.currentState?.validate() == true && _acceptedTerms) {
-                      final authService = AuthService();
-
-                      try {
-                        final response = await authService.register(
-                          username: _usernameController.text.trim(),
-                          email: _emailController.text.trim(),
-                          password: _passwordController.text.trim(),
-                        );
-                        if (!context.mounted) return;
-
-                        if (response['success'] == true) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Đăng ký thành công!')),
-                          );
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Đăng ký thất bại: ${response['message'] ?? ''}')),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Lỗi: $e')),
-                        );
-                      }
-                    } else if (!_acceptedTerms) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Vui lòng đồng ý điều khoản')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1DB954),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  child: const Text(
-                    'Đăng ký',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen()),
-                    );
-                },
-                child: const Text(
-                  'Đã có tài khoản? Đăng nhập',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -216,14 +234,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required TextEditingController controller,
     required String hintText,
     TextInputType? keyboardType,
+    required double fontSizeBody,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: Colors.white, fontSize: fontSizeBody),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: Colors.white54),
+        hintStyle: TextStyle(color: Colors.white54, fontSize: fontSizeBody),
         filled: true,
         fillColor: const Color(0xFF1A1A1A),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -249,15 +268,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required TextEditingController controller,
     required String hintText,
     required bool obscureText,
+    required double fontSizeBody,
     required VoidCallback onToggle,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: Colors.white, fontSize: fontSizeBody),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: Colors.white54),
+        hintStyle: TextStyle(color: Colors.white54, fontSize: fontSizeBody),
         filled: true,
         fillColor: const Color(0xFF1A1A1A),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),

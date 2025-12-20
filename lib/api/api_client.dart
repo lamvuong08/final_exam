@@ -2,47 +2,61 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
-  // ⚠️ THAY ĐỔI ĐỊA CHỈ NÀY CHO PHÙ HỢP
-  // Android emulator: http://10.0.2.2:8080
-  // iOS simulator: http://localhost:8080
-  // Thiết bị thật: http://<IP_LOCAL>:8080 (vd: http://192.168.1.10:8080)
-  static const String baseUrl = 'http://10.0.2.2:8080/api/auth';
+  static const String _baseUrl = 'http://10.0.2.2:8080/api/auth';
+
+  static const Map<String, String> _jsonHeaders = {
+    'Content-Type': 'application/json',
+  };
 
   static Future<Map<String, dynamic>> sendOtp(String email) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/send-otp'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
+    return _post(
+      endpoint: '/send-otp',
+      body: {'email': email},
+      defaultError: 'Lỗi không xác định',
     );
-
-    try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      if (response.statusCode == 200 && body['success'] == true) {
-        return {'success': true, 'message': body['message']};
-      } else {
-        return {'success': false, 'message': body['message'] ?? 'Lỗi không xác định'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Không thể kết nối server.'};
-    }
   }
 
-  static Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/verify-otp'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'otp': otp}),
+  static Future<Map<String, dynamic>> verifyOtp(
+      String email,
+      String otp,
+      ) async {
+    return _post(
+      endpoint: '/verify-otp',
+      body: {'email': email, 'otp': otp},
+      defaultError: 'OTP không hợp lệ.',
     );
+  }
 
+  static Future<Map<String, dynamic>> _post({
+    required String endpoint,
+    required Map<String, dynamic> body,
+    required String defaultError,
+  }) async {
     try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      if (response.statusCode == 200 && body['success'] == true) {
-        return {'success': true, 'message': body['message']};
-      } else {
-        return {'success': false, 'message': body['message'] ?? 'OTP không hợp lệ.'};
+      final response = await http.post(
+        Uri.parse('$_baseUrl$endpoint'),
+        headers: _jsonHeaders,
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'message': data['message'],
+        };
       }
-    } catch (e) {
-      return {'success': false, 'message': 'Không thể kết nối server.'};
+
+      return {
+        'success': false,
+        'message': data['message'] ?? defaultError,
+      };
+    } catch (_) {
+      return {
+        'success': false,
+        'message': 'Không thể kết nối server.',
+      };
     }
   }
 }

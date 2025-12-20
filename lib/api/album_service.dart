@@ -1,63 +1,78 @@
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import '../UI/models/song.dart';
 
 class AlbumService {
-  static Future<List<Song>> fetchSongsByAlbum(int albumId) async {
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/albums/$albumId/songs'),
-    );
+  static const String _baseUrl = 'http://10.0.2.2:8080/api';
+  static const Map<String, String> _jsonHeaders = {
+    'Content-Type': 'application/json',
+  };
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((songJson) => Song.fromJson(songJson)).toList();
-    } else {
-      throw Exception('Failed to load songs: ${response.statusCode}');
+  // ===================== SONGS =====================
+  static Future<List<Song>> fetchSongsByAlbum(int albumId) async {
+    final res = await http.get(Uri.parse('$_baseUrl/albums/$albumId/songs'));
+
+    if (res.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(res.body);
+      return data.map((json) => Song.fromJson(json)).toList();
     }
+    throw Exception('Failed to load songs: ${res.statusCode}');
   }
 
-  // --- FOLLOW / UNFOLLOW ---
+  // ===================== FOLLOW / UNFOLLOW =====================
   static Future<void> followAlbum(int albumId, int userId) async {
-    final response = await http.post(
-      Uri.parse('http://10.0.2.2:8080/api/user/$userId/follow/album/$albumId'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId}),
+    await _postOrDelete(
+      method: 'POST',
+      endpoint: '/user/$userId/follow/album/$albumId',
+      body: {'userId': userId},
+      errorMsg: 'Follow album failed',
     );
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Follow album failed: ${response.statusCode} ${response.body}');
-    }
   }
 
   static Future<void> unfollowAlbum(int albumId, int userId) async {
-    final response = await http.delete(
-      Uri.parse('http://10.0.2.2:8080/api/user/$userId/follow/album/$albumId'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId}),
+    await _postOrDelete(
+      method: 'DELETE',
+      endpoint: '/user/$userId/follow/album/$albumId',
+      body: {'userId': userId},
+      errorMsg: 'Unfollow album failed',
     );
-    if (response.statusCode != 200) {
-      throw Exception('Unfollow album failed: ${response.statusCode} ${response.body}');
-    }
   }
 
   static Future<bool> isAlbumFollowed(int albumId, int userId) async {
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:8080/api/user/$userId/follow/album/$albumId/check'),
-    );
+    final res = await http.get(Uri.parse('$_baseUrl/user/$userId/follow/album/$albumId/check'));
 
-    if (response.statusCode == 200) {
+    if (res.statusCode == 200) {
+      final bodyStr = res.body.trim().toLowerCase();
       try {
-        final bodyStr = response.body.trim().toLowerCase();
-        // Nếu server trả true/false hoặc {"following": true}
-        final isFollowed = bodyStr == 'true' ||
+        return bodyStr == 'true' ||
             (bodyStr.startsWith('{') && jsonDecode(bodyStr)['following'] == true);
-        return isFollowed;
       } catch (_) {
         return false;
       }
-    } else {
-      return false;
     }
+    return false;
   }
 
+  // ===================== PRIVATE HELPER =====================
+  static Future<void> _postOrDelete({
+    required String method,
+    required String endpoint,
+    Map<String, dynamic>? body,
+    required String errorMsg,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$endpoint');
+    late final http.Response res;
+
+    if (method == 'POST') {
+      res = await http.post(uri, headers: _jsonHeaders, body: jsonEncode(body ?? {}));
+    } else if (method == 'DELETE') {
+      res = await http.delete(uri, headers: _jsonHeaders, body: jsonEncode(body ?? {}));
+    } else {
+      throw Exception('Unsupported HTTP method: $method');
+    }
+
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception('$errorMsg: ${res.statusCode} ${res.body}');
+    }
+  }
 }

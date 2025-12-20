@@ -24,107 +24,60 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  static const String baseUrl = 'http://10.0.2.2:8080';
+  static const baseUrl = 'http://10.0.2.2:8080';
 
-  late final AudioPlayer _player;
+  late final AudioPlayer player;
 
-  Song? _song;
-  bool _loadingSong = true;
-  String? _lyrics;
+  Song? song;
+  bool loadingSong = true;
+  String? lyrics;
 
+  bool isPlaying = false;
+  bool isLiked = false;
+  bool loadingLike = false;
 
-  bool _isPlaying = false;
-  bool _isLiked = false;
-  bool _loadingLike = false;
+  Duration duration = Duration.zero;
+  Duration position = Duration.zero;
 
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
+  int currentIndex = 0;
 
-  int _currentIndex = 0;
+  List<Song> get queue =>
+      widget.playlist != null && widget.playlist!.isNotEmpty
+          ? widget.playlist!
+          : [widget.initialSong];
 
-  Song get _baseSong => _queue[_currentIndex];
+  Song get baseSong => queue[currentIndex];
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.startIndex;
-    _player = AudioPlayer();
-    _setupListeners();
-    _loadSongDetail();
+    currentIndex = widget.startIndex;
+    player = AudioPlayer();
+    setupListeners();
+    loadSongDetail();
   }
 
-  List<Song> get _queue {
-    if (widget.playlist != null && widget.playlist!.isNotEmpty) {
-      return widget.playlist!;
-    }
-    return [widget.initialSong];
-  }
-
-
-  void _showQueue() {
-    final queue = _queue;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: ListView.builder(
-            itemCount: queue.length,
-            itemBuilder: (context, index) {
-              final song = queue[index];
-              final isPlaying = index == _currentIndex;
-
-              return ListTile(
-                leading: Icon(
-                  isPlaying ? Icons.equalizer : Icons.music_note,
-                  color: isPlaying ? Colors.greenAccent : Colors.white70,
-                ),
-                title: Text(
-                  song.title ?? '',
-                  style: TextStyle(
-                    color: isPlaying ? Colors.greenAccent : Colors.white,
-                    fontWeight:
-                    isPlaying ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                subtitle: Text(
-                  song.artist?.name ?? '',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _playFromQueue(index);
-                },
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-
-  void _playFromQueue(int index) {
-    if (index < 0 || index >= widget.playlist!.length) return;
-
-    setState(() {
-      _currentIndex = index;
-      _song = null;
-      _loadingSong = true;
-      _isLiked = false;
-      _duration = Duration.zero;
-      _position = Duration.zero;
+  void setupListeners() {
+    player.onDurationChanged.listen((d) {
+      if (!mounted) return;
+      setState(() => duration = d);
     });
 
-    _loadSongDetail();
+    player.onPositionChanged.listen((p) {
+      if (!mounted) return;
+      setState(() => position = p);
+    });
+
+    player.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() => isPlaying = state == PlayerState.playing);
+    });
+
+    player.onPlayerComplete.listen((_) => playNext());
   }
 
-  String _cleanLyrics(String raw) {
+  /// Ẩn timestamp + metadata trong lyrics
+  String cleanLyrics(String raw) {
     return raw
         .replaceAll(RegExp(r'\[\d{2}:\d{2}\.\d{2}\]'), '')
         .replaceAll(RegExp(r'\[[a-zA-Z]+:.*?\]'), '')
@@ -132,154 +85,104 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         .trim();
   }
 
-
-
-
-
-  void _setupListeners() {
-    _player.onDurationChanged.listen((d) {
-      if (mounted) setState(() => _duration = d);
-    });
-
-    _player.onPositionChanged.listen((p) {
-      if (mounted) setState(() => _position = p);
-    });
-
-    _player.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() => _isPlaying = state == PlayerState.playing);
-      }
-    });
-
-    _player.onPlayerComplete.listen((_) => _playNext());
-  }
-
-  Future<void> _loadSongDetail() async {
+  Future<void> loadSongDetail() async {
     try {
-      final song = await SongService.getSongById(_baseSong.id);
+      final result = await SongService.getSongById(baseSong.id);
       if (!mounted) return;
 
       setState(() {
-        _song = song;
-        _loadingSong = false;
-        _duration = Duration.zero;
-        _position = Duration.zero;
+        song = result;
+        loadingSong = false;
+        duration = Duration.zero;
+        position = Duration.zero;
+        lyrics = null;
       });
 
-      await _loadLikeStatus();
-      await _playSong();
-    } catch (e) {
-      debugPrint('❌ Load song error: $e');
-      if (mounted) setState(() => _loadingSong = false);
+      await loadLikeStatus();
+      await playSong();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => loadingSong = false);
     }
   }
 
-  Future<void> _playSong() async {
-    if (_song?.filePath == null || _song!.filePath!.isEmpty) return;
-
-    final url = '$baseUrl/uploads/${_song!.filePath}';
-    await _player.stop();
-    await _player.play(UrlSource(url));
+  Future<void> playSong() async {
+    if (song?.filePath == null || song!.filePath!.isEmpty) return;
+    await player.stop();
+    await player.play(UrlSource('$baseUrl/uploads/${song!.filePath}'));
   }
 
-  Future<void> _playNext() async {
-    final queue = _queue;
-    if (queue.isEmpty) return;
-
-    _currentIndex = (_currentIndex + 1) % queue.length;
-    _reloadSong();
-  }
-
-  Future<void> _playPrevious() async {
-    final queue = _queue;
-    if (queue.isEmpty) return;
-
-    if (_position.inSeconds > 3) {
-      await _player.seek(Duration.zero);
-    } else {
-      _currentIndex =
-          (_currentIndex - 1 + queue.length) % queue.length;
-      _reloadSong();
-    }
-  }
-
-
-  void _reloadSong() {
+  void reloadSong() {
     setState(() {
-      _song = null;
-      _loadingSong = true;
-      _isLiked = false;
+      song = null;
+      loadingSong = true;
+      isLiked = false;
+      lyrics = null;
     });
-    _loadSongDetail();
+    loadSongDetail();
   }
 
-  Future<void> _loadLikeStatus() async {
-    if (_song == null) return;
-    try {
-      final liked = await SongService.isSongLiked(
-        _song!.id,
-        widget.userId,
-      );
-      if (mounted) setState(() => _isLiked = liked);
-    } catch (e) {
-      debugPrint('❌ Load like status error: $e');
+  void playNext() {
+    if (queue.isEmpty) return;
+    currentIndex = (currentIndex + 1) % queue.length;
+    reloadSong();
+  }
+
+  Future<void> playPrevious() async {
+    if (queue.isEmpty) return;
+
+    if (position.inSeconds > 3) {
+      await player.seek(Duration.zero);
+    } else {
+      currentIndex = (currentIndex - 1 + queue.length) % queue.length;
+      reloadSong();
     }
   }
 
-  Future<void> _toggleLike() async {
-    if (_loadingLike || _song == null) return;
+  Future<void> loadLikeStatus() async {
+    if (song == null) return;
+    final liked = await SongService.isSongLiked(song!.id, widget.userId);
+    if (!mounted) return;
+    setState(() => isLiked = liked);
+  }
 
-    setState(() => _loadingLike = true);
+  Future<void> toggleLike() async {
+    if (loadingLike || song == null) return;
 
-    final libraryController =
-    Provider.of<LibraryController>(context, listen: false);
+    setState(() => loadingLike = true);
+    final lib = Provider.of<LibraryController>(context, listen: false);
 
     try {
-      if (_isLiked) {
-        await libraryController.unlikeSong(widget.userId, _song!.id);
-      } else {
-        await libraryController.likeSong(widget.userId, _song!);
-      }
+      isLiked
+          ? await lib.unlikeSong(widget.userId, song!.id)
+          : await lib.likeSong(widget.userId, song!);
 
       if (!mounted) return;
-
-      setState(() => _isLiked = !_isLiked);
+      setState(() => isLiked = !isLiked);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isLiked ? 'Đã thêm vào yêu thích' : 'Đã bỏ yêu thích',
-          ),
-        ),
+        SnackBar(content: Text(isLiked ? 'Đã thêm vào yêu thích' : 'Đã bỏ yêu thích')),
       );
-    } catch (e) {
-      debugPrint('❌ Toggle like error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Có lỗi xảy ra')),
-        );
-      }
     } finally {
-      if (mounted) setState(() => _loadingLike = false);
+      if (mounted) setState(() => loadingLike = false);
     }
   }
 
+  String fmt(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
 
   @override
   void dispose() {
-    _player.dispose();
+    player.dispose();
     super.dispose();
-  }
-
-  String _fmt(Duration d) {
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loadingSong) {
+    if (loadingSong) {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator()),
@@ -291,167 +194,148 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: Text(_song?.title ?? ''),
+        title: Text(song?.title ?? ''),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.queue_music),
-            onPressed: _showQueue,
-          )
+          IconButton(icon: const Icon(Icons.queue_music), onPressed: showQueue),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.network(
-                '$baseUrl/uploads/${_song?.coverImage ?? ''}',
-                width: 280,
-                height: 280,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 280,
-                  height: 280,
-                  color: Colors.deepPurple.withAlpha(40),
-                  child: const Icon(Icons.music_note, size: 80, color: Colors.white),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              _song?.title ?? '',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _song?.artist?.name ?? '',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 24),
-            Slider(
-              value: _position.inSeconds.toDouble(),
-              max: _duration.inSeconds > 0 ? _duration.inSeconds.toDouble() : 1,
-              onChanged: (v) => _player.seek(Duration(seconds: v.toInt())),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_fmt(_position), style: const TextStyle(color: Colors.white70)),
-                Text(_fmt(_duration), style: const TextStyle(color: Colors.white70)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.skip_previous, size: 36),
-                  color: Colors.white,
-                  onPressed: _playPrevious,
-                ),
-                IconButton(
-                  icon: Icon(
-                    _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                    size: 72,
-                  ),
-                  color: Colors.white,
-                  onPressed: () async {
-                    _isPlaying ? await _player.pause() : await _player.resume();
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.skip_next, size: 36),
-                  color: Colors.white,
-                  onPressed: _playNext,
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: _loadingLike
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : Icon(
-                    _isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: _isLiked ? Colors.red : Colors.white,
-                  ),
-                  onPressed: _toggleLike,
-                ),
-                TextButton(
-                  onPressed: _showLyrics,
-                  child: const Text(
-                    'Lyrics',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLyrics() async {
-    if (_lyrics == null) {
-      await _loadLyrics();
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
+      body: SafeArea(
         child: SingleChildScrollView(
-          child: Text(
-            _lyrics != null && _lyrics!.isNotEmpty
-                ? _cleanLyrics(_lyrics!)
-                : 'Chưa có lời bài hát',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-              height: 1.6,
-            ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  '$baseUrl/uploads/${song?.coverImage ?? ''}',
+                  width: 260,
+                  height: 260,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 260,
+                    height: 260,
+                    color: Colors.deepPurple.withAlpha(40),
+                    child: const Icon(Icons.music_note, size: 80, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                song?.title ?? '',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(song?.artist?.name ?? '', style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 20),
+
+              Slider(
+                value: position.inSeconds.clamp(0, duration.inSeconds).toDouble(),
+                max: duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1,
+                onChanged: (v) => player.seek(Duration(seconds: v.toInt())),
+              ),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(fmt(position), style: const TextStyle(color: Colors.white70)),
+                  Text(fmt(duration), style: const TextStyle(color: Colors.white70)),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(icon: const Icon(Icons.skip_previous, size: 36), color: Colors.white, onPressed: playPrevious),
+                  IconButton(
+                    icon: Icon(isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled, size: 72),
+                    color: Colors.white,
+                    onPressed: () async => isPlaying ? player.pause() : player.resume(),
+                  ),
+                  IconButton(icon: const Icon(Icons.skip_next, size: 36), color: Colors.white, onPressed: playNext),
+                ],
+              ),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: loadingLike
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? Colors.red : Colors.white),
+                    onPressed: toggleLike,
+                  ),
+                  TextButton(
+                    onPressed: showLyrics,
+                    child: const Text('Lyrics', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-
-  Future<void> _loadLyrics() async {
-    if (_song == null) return;
-
-    try {
-      final raw = await SongService.getLyricsBySongId(_song!.id);
-
-      if (!mounted) return;
-
-      setState(() {
-        _lyrics = raw;
-      });
-    } catch (e) {
-      debugPrint('❌ Load lyrics error: $e');
-      _lyrics = null;
-    }
+  void showQueue() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => ListView.builder(
+        itemCount: queue.length,
+        itemBuilder: (_, i) {
+          final s = queue[i];
+          final active = i == currentIndex;
+          return ListTile(
+            leading: Icon(active ? Icons.equalizer : Icons.music_note, color: active ? Colors.greenAccent : Colors.white70),
+            title: Text(s.title, style: TextStyle(color: active ? Colors.greenAccent : Colors.white,),),
+            subtitle: Text(s.artist?.name ?? '', style: const TextStyle(color: Colors.white70)),
+            onTap: () {
+              Navigator.pop(context);
+              currentIndex = i;
+              reloadSong();
+            },
+          );
+        },
+      ),
+    );
   }
 
+  void showLyrics() async {
+    lyrics ??= await SongService.getLyricsBySongId(song!.id);
 
+    if (!mounted) return;
 
+    final displayLyrics = lyrics != null && lyrics!.isNotEmpty
+        ? cleanLyrics(lyrics!)
+        : 'Chưa có lời bài hát';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (_, controller) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            controller: controller,
+            child: Text(
+              displayLyrics,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 16, height: 1.6),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

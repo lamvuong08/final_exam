@@ -1,44 +1,44 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import '../UI/models/user.dart';
-import '../UI/models/playlist.dart';
-import '../UI/models/artist.dart';
-import '../UI/models/song.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:8080/api';
+  static const String _baseUrl = 'http://10.0.2.2:8080/api';
 
-  // ===================== PROFILE =========================
+  static const Map<String, String> _jsonHeaders = {
+    'Content-Type': 'application/json',
+  };
+
+  /* ===================== PROFILE ===================== */
 
   Future<UserModel> fetchProfile(int userId) async {
-    final res = await http.get(
-      Uri.parse('$baseUrl/profile/$userId'),
+    final response = await http.get(
+      Uri.parse('$_baseUrl/profile/$userId'),
     );
 
-    if (res.statusCode == 200) {
-      return UserModel.fromJson(jsonDecode(res.body));
-    } else {
-      throw Exception("Failed to load profile");
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load profile');
     }
+
+    return UserModel.fromJson(jsonDecode(response.body));
   }
 
   Future<bool> updateProfile({
     required int id,
     required String username,
-    String? profileImage,
   }) async {
-    final res = await http.put(
-      Uri.parse('$baseUrl/profile/update'),
-      headers: {"Content-Type": "application/json"},
+    final response = await http.put(
+      Uri.parse('$_baseUrl/profile/update'),
+      headers: _jsonHeaders,
       body: jsonEncode({
-        "id": id,
-        "username": username,
-        "profileImage": profileImage ?? "",
+        'id': id,
+        'username': username,
       }),
     );
 
-    return res.statusCode == 200;
+    return response.statusCode == 200;
   }
 
   Future<bool> changePassword({
@@ -46,25 +46,59 @@ class ApiService {
     required String oldPw,
     required String newPw,
   }) async {
-    final res = await http.put(
-      Uri.parse(
-          '$baseUrl/profile/change-password?id=$id&oldPw=$oldPw&newPw=$newPw'),
+    final response = await http.put(
+      Uri.parse('http://10.0.2.2:8080/api/profile/change-password'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'id': id,
+        'oldPw': oldPw,
+        'newPw': newPw,
+      }),
     );
 
-    return res.statusCode == 200;
-  }
+    print('status = ${response.statusCode}');
+    print('body = ${response.body}');
 
-  // ===================== LIBRARY =========================
+    return response.statusCode == 200 && response.body == 'true';
+  }
+  /* ===================== LIBRARY ===================== */
 
   Future<Map<String, dynamic>> fetchLibrary(int userId) async {
-    final res = await http.get(
-      Uri.parse("$baseUrl/library/$userId"),
+    final response = await http.get(
+      Uri.parse('$_baseUrl/library/$userId'),
     );
 
-    if (res.statusCode == 200) {
-      return jsonDecode(res.body);
-    } else {
-      throw Exception("Failed to load library");
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load library');
     }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<bool> updateProfileWithImage({
+    required int id,
+    required String username,
+    required File imageFile,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('http://10.0.2.2:8080/api/profile/update-with-image'),
+    );
+
+    request.fields['id'] = id.toString();
+    request.fields['username'] = username;
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        imageFile.path,
+        contentType: http.MediaType('image', 'jpeg'),
+      ),
+    );
+
+    final response = await request.send();
+    return response.statusCode == 200;
   }
 }

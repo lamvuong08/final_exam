@@ -48,7 +48,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<String> _titles = [
     'Music Player',
-    'Music Player',
+    'Search',
     'Library',
     'Profile',
   ];
@@ -57,7 +57,20 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
+      appBar: _currentIndex == 1
+          ? PreferredSize(
+        preferredSize: const Size.fromHeight(40), // AppBar nhỏ cho Search
+        child: AppBar(
+          backgroundColor: Colors.black,
+          title: Text(
+            _titles[_currentIndex],
+            style: const TextStyle(color: Colors.white),
+          ),
+          automaticallyImplyLeading: false,
+          elevation: 0,
+        ),
+      )
+          : AppBar(
         backgroundColor: Colors.black,
         title: Text(
           _titles[_currentIndex],

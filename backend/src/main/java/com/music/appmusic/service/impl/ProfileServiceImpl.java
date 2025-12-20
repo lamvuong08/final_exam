@@ -19,49 +19,81 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public ProfileResponse getProfile(Long userId) {
+        log.info("===== GET PROFILE =====");
+        log.info("UserID requested: {}", userId);
 
-        User user = userRepo.findById(userId).orElseThrow();
+        User user = userRepo.findById(userId).orElseThrow(() -> {
+            log.warn("User with ID {} not found", userId);
+            return new RuntimeException("User not found");
+        });
 
-        return ProfileResponse.builder()
+        String image = user.getProfileImage();
+        log.info("Raw profileImage from DB: {}", image);
+
+        if (image != null && !image.isBlank()) {
+            image = "http://10.0.2.2:8080/uploads/" + image;
+            log.info("Full URL profileImage: {}", image);
+        } else {
+            log.info("User has no profileImage");
+        }
+
+        ProfileResponse response = ProfileResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .profileImage(user.getProfileImage())
+                .profileImage(image)
                 .build();
+
+        log.info("ProfileResponse prepared: {}", response);
+        log.info("=======================");
+        return response;
     }
 
     @Override
     public boolean updateProfile(Long id, String newUsername, String newImage) {
 
-        User user = userRepo.findById(id).orElseThrow();
+        User user = userRepo.findById(id).orElseThrow(() -> {
+            return new RuntimeException("User not found");
+        });
+
+        boolean updated = false;
 
         if (newUsername != null && !newUsername.isBlank()) {
             user.setUsername(newUsername);
+            updated = true;
+        } else {
+            log.info("Username not changed");
         }
 
         if (newImage != null && !newImage.isBlank()) {
             user.setProfileImage(newImage);
+            updated = true;
+        } else {
+            log.info("ProfileImage not changed");
         }
 
-        userRepo.save(user);
+        if (updated) {
+            userRepo.save(user);
+            log.info("User updated successfully");
+        } else {
+            log.info("Nothing to update");
+        }
         return true;
     }
 
     @Override
     public boolean changePassword(Long id, String oldPw, String newPw) {
 
-        User user = userRepo.findById(id).orElseThrow();
+        User user = userRepo.findById(id).orElseThrow(() -> {
+            return new RuntimeException("User not found");
+        });
 
-        // ✔️ So sánh mật khẩu oldPw với BCrypt trong DB
         if (!passwordEncoder.matches(oldPw, user.getPassword())) {
-            log.warn("SAI MẬT KHẨU CŨ!");
             return false;
         }
 
-        // ✔️ Mã hóa mật khẩu mới
         user.setPassword(passwordEncoder.encode(newPw));
         userRepo.save(user);
-
         return true;
     }
 }

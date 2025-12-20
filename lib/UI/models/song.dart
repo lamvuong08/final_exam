@@ -25,7 +25,6 @@ class Song {
     required this.playCount,
   });
 
-  // ─── DÙNG KHI LOAD SONG TỪ ALBUM/ARTIST DETAIL ───
   factory Song.fromJsonBrief(Map<String, dynamic> json) {
     Map<String, dynamic>? artistJson = json['artist'];
     Artist? artist;
@@ -51,7 +50,6 @@ class Song {
     );
   }
 
-  // ─── DÙNG KHI LOAD SONG RIÊNG LẺ (liked songs) ───
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song.fromJsonBrief(json);
   }

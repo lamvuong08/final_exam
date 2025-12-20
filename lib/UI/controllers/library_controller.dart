@@ -1,22 +1,15 @@
 // lib/controllers/library_controller.dart
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../api/song_service.dart';
 import '../models/album.dart';
-import '../models/song.dart';
 import '../models/artist.dart';
+import '../models/song.dart';
 
 class LibraryController with ChangeNotifier {
-  List<Song> likedSongs = [];
-  List<Artist> artists = [];
-  List<Album> albums = [];
-  List<Map<String, dynamic>> playlists = [];
-  final List<Song> _playQueue = [];
-
-  List<Song> get playQueue => List.unmodifiable(_playQueue);
-
   static const String baseUrl = 'http://10.0.2.2:8080/api';
 
   final Map<String, String> _noCacheHeaders = {
@@ -25,6 +18,14 @@ class LibraryController with ChangeNotifier {
     'Expires': '0',
     'Content-Type': 'application/json',
   };
+
+  List<Song> likedSongs = [];
+  List<Artist> artists = [];
+  List<Album> albums = [];
+  List<Map<String, dynamic>> playlists = [];
+
+  final List<Song> _playQueue = [];
+  List<Song> get playQueue => List.unmodifiable(_playQueue);
 
   /* ===================== LOAD LIBRARY ===================== */
 
@@ -50,22 +51,22 @@ class LibraryController with ChangeNotifier {
       headers: _noCacheHeaders,
     );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      likedSongs = data.map((e) => Song.fromJson(e)).toList();
-    } else {
+    if (response.statusCode != 200) {
       likedSongs = [];
+      return;
     }
+
+    final List data = jsonDecode(response.body);
+    likedSongs = data.map((e) => Song.fromJson(e)).toList();
   }
 
   Future<void> likeSong(int userId, Song song) async {
     await SongService.likeSong(song.id, userId);
 
-    // tránh trùng
-    if (!likedSongs.any((s) => s.id == song.id)) {
-      likedSongs.insert(0, song);
-      notifyListeners();
-    }
+    if (likedSongs.any((s) => s.id == song.id)) return;
+
+    likedSongs.insert(0, song);
+    notifyListeners();
   }
 
   Future<void> unlikeSong(int userId, int songId) async {
@@ -83,12 +84,13 @@ class LibraryController with ChangeNotifier {
       headers: _noCacheHeaders,
     );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      artists = data.map((e) => Artist.fromJson(e)).toList();
-    } else {
+    if (response.statusCode != 200) {
       artists = [];
+      return;
     }
+
+    final List data = jsonDecode(response.body);
+    artists = data.map((e) => Artist.fromJson(e)).toList();
   }
 
   /* ===================== ALBUMS ===================== */
@@ -99,12 +101,13 @@ class LibraryController with ChangeNotifier {
       headers: _noCacheHeaders,
     );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      albums = data.map((e) => Album.fromJson(e)).toList();
-    } else {
+    if (response.statusCode != 200) {
       albums = [];
+      return;
     }
+
+    final List data = jsonDecode(response.body);
+    albums = data.map((e) => Album.fromJson(e)).toList();
   }
 
   /* ===================== PLAYLISTS ===================== */
@@ -115,13 +118,14 @@ class LibraryController with ChangeNotifier {
       headers: _noCacheHeaders,
     );
 
-    if (response.statusCode == 200) {
-      playlists = List<Map<String, dynamic>>.from(
-        jsonDecode(response.body),
-      );
-    } else {
+    if (response.statusCode != 200) {
       playlists = [];
+      return;
     }
+
+    playlists = List<Map<String, dynamic>>.from(
+      jsonDecode(response.body),
+    );
   }
 
   /* ===================== DETAIL FETCH ===================== */
@@ -135,6 +139,7 @@ class LibraryController with ChangeNotifier {
     if (response.statusCode == 200) {
       return Album.fromJsonDetail(jsonDecode(response.body));
     }
+
     throw Exception('Failed to load album detail');
   }
 
@@ -147,20 +152,23 @@ class LibraryController with ChangeNotifier {
     if (response.statusCode == 200) {
       return Artist.fromJsonDetail(jsonDecode(response.body));
     }
+
     throw Exception('Failed to load artist detail');
   }
 
+  /* ===================== PLAY QUEUE ===================== */
+
   void addToQueue(Song song) {
     if (_playQueue.any((s) => s.id == song.id)) return;
+
     _playQueue.add(song);
     notifyListeners();
   }
 
   void addAllToQueue(List<Song> songs) {
     for (final song in songs) {
-      if (!_playQueue.any((s) => s.id == song.id)) {
-        _playQueue.add(song);
-      }
+      if (_playQueue.any((s) => s.id == song.id)) continue;
+      _playQueue.add(song);
     }
     notifyListeners();
   }

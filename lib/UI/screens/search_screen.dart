@@ -1,12 +1,11 @@
-// lib/UI/screens/search_screen.dart
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'dart:async';
 import 'package:async/async.dart';
 import 'package:provider/provider.dart';
-import '../../utils/user_utils.dart';
 
+import '../../utils/user_utils.dart';
 import '../controllers/library_controller.dart';
 import '../models/album.dart';
 import '../models/artist.dart';
@@ -24,6 +23,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+
   bool _isLoading = false;
   Map<String, dynamic>? _searchResults;
   int? _userId;
@@ -39,8 +39,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadUserId() async {
     final uid = await UserUtils.getUserId();
-    if (!mounted) return;
-    setState(() => _userId = uid);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _userId = uid;
+    });
   }
 
   void _onSearchChanged(String query) {
@@ -49,7 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final trimmedQuery = query.trim();
 
-    if (trimmedQuery.isEmpty || trimmedQuery.length < 2) {
+    if (trimmedQuery.length < 2) {
       setState(() {
         _searchResults = null;
         _isLoading = false;
@@ -57,38 +61,53 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      _searchOperation =
-          CancelableOperation.fromFuture(_performSearch(trimmedQuery));
-    });
+    _debounceTimer = Timer(
+      const Duration(milliseconds: 300),
+          () {
+        _searchOperation = CancelableOperation.fromFuture(
+          _performSearch(trimmedQuery),
+        );
+      },
+    );
   }
 
   Future<void> _performSearch(String query) async {
-    if (_searchController.text.trim() != query) return;
+    if (_searchController.text.trim() != query) {
+      return;
+    }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final response = await http.get(
         Uri.parse('http://10.0.2.2:8080/api/search?q=$query'),
-        headers: {'Accept': 'application/json'},
+        headers: const {'Accept': 'application/json'},
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>?;
-        if (data != null && _searchController.text.trim() == query) {
-          setState(() => _searchResults = data);
+        final data =
+        json.decode(response.body) as Map<String, dynamic>?;
+        if (mounted && _searchController.text.trim() == query) {
+          setState(() {
+            _searchResults = data;
+          });
         }
       } else {
-        throw Exception('Lỗi API: ${response.statusCode}');
+        throw Exception();
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Không thể tìm kiếm: $e')),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -104,45 +123,48 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const SizedBox(),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.black,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      body: SafeArea(
         child: Column(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Nghệ sĩ, bài hát, hoặc podcast',
-                  hintStyle: const TextStyle(color: Colors.white70),
-                  prefixIcon: const Icon(Icons.search, color: Colors.white70),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white70),
-                    onPressed: () {
-                      _searchController.clear();
-                      _onSearchChanged('');
-                    },
-                  )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Nghệ sĩ, bài hát, hoặc podcast',
+                    hintStyle: const TextStyle(color: Colors.white70),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white70),
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearchChanged('');
+                      },
+                    )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+
             Expanded(
               child: _searchController.text.trim().isEmpty
                   ? _buildDefaultCategories()
@@ -166,9 +188,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults(Map<String, dynamic> results) {
-    final songs = (results['songs'] as List?) ?? [];
-    final albums = (results['albums'] as List?) ?? [];
-    final artists = (results['artists'] as List?) ?? [];
+    final songs = results['songs'] as List? ?? [];
+    final albums = results['albums'] as List? ?? [];
+    final artists = results['artists'] as List? ?? [];
 
     if (songs.isEmpty && albums.isEmpty && artists.isEmpty) {
       return Center(
@@ -184,19 +206,30 @@ class _SearchScreenState extends State<SearchScreen> {
         if (artists.isNotEmpty) ...[
           _sectionTitle('Nghệ sĩ'),
           ...artists.map((item) {
-            if (item is! Map<String, dynamic>) return const SizedBox();
+            if (item is! Map<String, dynamic>) {
+              return const SizedBox();
+            }
             final artist = Artist.fromJson(item);
             return ListTile(
-              leading: const Icon(Icons.person, color: Colors.grey),
-              title: Text(artist.name, style: const TextStyle(color: Colors.white)),
+              leading:
+              const Icon(Icons.person, color: Colors.grey),
+              title: Text(
+                artist.name,
+                style:
+                const TextStyle(color: Colors.white),
+              ),
               onTap: () {
-                if (_userId == null) return;
-
+                if (_userId == null) {
+                  return;
+                }
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        ArtistDetailScreen(artist: artist, userId: _userId!),
+                    builder: (context) =>
+                        ArtistDetailScreen(
+                          artist: artist,
+                          userId: _userId!,
+                        ),
                   ),
                 );
               },
@@ -206,18 +239,30 @@ class _SearchScreenState extends State<SearchScreen> {
         if (albums.isNotEmpty) ...[
           _sectionTitle('Album'),
           ...albums.map((item) {
-            if (item is! Map<String, dynamic>) return const SizedBox();
+            if (item is! Map<String, dynamic>) {
+              return const SizedBox();
+            }
             final album = Album.fromJson(item);
             return ListTile(
-              leading: const Icon(Icons.album, color: Colors.grey),
-              title: Text(album.title, style: const TextStyle(color: Colors.white)),
+              leading:
+              const Icon(Icons.album, color: Colors.grey),
+              title: Text(
+                album.title,
+                style:
+                const TextStyle(color: Colors.white),
+              ),
               onTap: () {
-                if (_userId == null) return;
+                if (_userId == null) {
+                  return;
+                }
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        AlbumDetailScreen(album: album, userId: _userId!),
+                    builder: (context) =>
+                        AlbumDetailScreen(
+                          album: album,
+                          userId: _userId!,
+                        ),
                   ),
                 );
               },
@@ -227,32 +272,44 @@ class _SearchScreenState extends State<SearchScreen> {
         if (songs.isNotEmpty) ...[
           _sectionTitle('Bài hát'),
           ...songs.map((item) {
-            if (item is! Map<String, dynamic>) return const SizedBox();
+            if (item is! Map<String, dynamic>) {
+              return const SizedBox();
+            }
 
-            final Song song = Song.fromJsonBrief(item);
-
+            final song = Song.fromJsonBrief(item);
             return ListTile(
-              leading: const Icon(Icons.music_note, color: Colors.grey),
-              title: Text(song.title, style: const TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.music_note,
+                  color: Colors.grey),
+              title: Text(
+                song.title,
+                style:
+                const TextStyle(color: Colors.white),
+              ),
               onTap: () {
-                if (_userId == null) return;
+                if (_userId == null) {
+                  return;
+                }
 
                 final libraryController =
-                Provider.of<LibraryController>(context, listen: false);
+                Provider.of<LibraryController>(
+                  context,
+                  listen: false,
+                );
 
                 libraryController.addToQueue(song);
-
-                final queue = libraryController.playQueue;
+                final queue =
+                    libraryController.playQueue;
 
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => MusicPlayerScreen(
-                      initialSong: song,
-                      playlist: queue,
-                      startIndex: queue.length - 1,
-                      userId: _userId!,
-                    ),
+                    builder: (context) =>
+                        MusicPlayerScreen(
+                          initialSong: song,
+                          playlist: queue,
+                          startIndex: queue.length - 1,
+                          userId: _userId!,
+                        ),
                   ),
                 );
               },
@@ -265,11 +322,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding:
+      const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       child: Text(
         title,
         style: const TextStyle(
-            color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -287,25 +348,31 @@ class _SearchScreenState extends State<SearchScreen> {
     ];
 
     return GridView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: categories.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate:
+      const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 16 / 9,
         crossAxisSpacing: 15,
         mainAxisSpacing: 15,
       ),
-      itemBuilder: (_, i) {
-        final c = categories[i];
+      itemBuilder: (context, index) {
+        final c = categories[index];
         return Container(
           decoration: BoxDecoration(
-            color: (c['color'] as Color).withAlpha(200),
+            color:
+            (c['color'] as Color).withAlpha(200),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
             child: Text(
               c['name'] as String,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         );

@@ -25,6 +25,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.black,
         leading: IconButton(
@@ -38,143 +39,179 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         centerTitle: true,
       ),
       backgroundColor: Colors.black,
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Phần Email / Số điện thoại
-            const Text(
-              'Email',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
-                      hintText: 'Nhập địa chỉ email Quý khách',
-                      hintStyle: const TextStyle(color: Colors.white70),
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.5),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Email',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.5),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _emailController,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFF1A1A1A),
+                                  hintText: 'Nhập địa chỉ email Quý khách',
+                                  hintStyle:
+                                  const TextStyle(color: Colors.white70),
+                                  border: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color:
+                                      Colors.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color:
+                                      Colors.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  focusedBorder: const OutlineInputBorder(
+                                    borderSide:
+                                    BorderSide(color: Colors.white),
+                                  ),
+                                ),
+                                style:
+                                const TextStyle(color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: _sendOtp,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                const Color(0xFF1DB954),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: const Text('GỬI MÃ OTP'),
+                            ),
+                          ],
                         ),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white),
-                      ),
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 12),
+                            ),
+                          ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'OTP *',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _otpController,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFF1A1A1A),
+                            hintText: 'Nhập mã OTP đã được gửi',
+                            hintStyle:
+                            const TextStyle(color: Colors.white70),
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color:
+                                Colors.white.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color:
+                                Colors.white.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide:
+                              BorderSide(color: Colors.white),
+                            ),
+                          ),
+                          style:
+                          const TextStyle(color: Colors.white),
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          buildCounter: (_, {
+                            required currentLength,
+                            maxLength,
+                            required isFocused,
+                          }) =>
+                          null,
+                        ),
+                        Padding(
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: TextButton(
+                              onPressed: _resendOtp,
+                              child: const Text(
+                                'Gửi lại mã OTP',
+                                style: TextStyle(
+                                  color: Color(0xFF1DB954),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: _verifyOtp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                              const Color(0xFF1DB954),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Xác nhận',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _sendOtp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1DB954),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text('GỬI MÃ OTP'),
-                ),
-              ],
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
-                ),
-              ),
-
-            const SizedBox(height: 24),
-
-            // Phần nhập OTP
-            const Text(
-              'OTP *',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _otpController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFF1A1A1A),
-                hintText: 'Nhập mã OTP đã được gửi',
-                hintStyle: const TextStyle(color: Colors.white70),
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white),
-                ),
-              ),
-              style: const TextStyle(color: Colors.white),
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-            ),
-
-            // Gửi lại mã OTP
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: TextButton(
-                  onPressed: _resendOtp,
-                  child: const Text(
-                    'Gửi lại mã OTP',
-                    style: TextStyle(color: Color(0xFF1DB954), fontSize: 16),
                   ),
                 ),
               ),
-            ),
-            // Button Xác nhận
-            Center(
-              child: ElevatedButton(
-                onPressed: _verifyOtp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1DB954),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Xác nhận',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -260,7 +297,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ChangePasswordScreen(email: email),
+          builder: (context) =>
+              ChangePasswordScreen(email: email),
         ),
       );
     } else {
