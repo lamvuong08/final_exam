@@ -24,9 +24,7 @@ public class LibraryController {
 
     @GetMapping("/user/{userId}/library/artists")
     public ResponseEntity<List<ArtistDTO>> getFollowedArtists(@PathVariable Long userId) {
-        System.out.println("🔍 Loading artists for user: " + userId);
         List<ArtistDTO> artists = libraryService.getFollowedArtists(userId);
-        System.out.println("✅ Found: " + artists.size() + " artists");
         return ResponseEntity.ok(artists);
     }
 

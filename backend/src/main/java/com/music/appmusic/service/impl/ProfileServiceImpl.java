@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
 
 @Service
 @RequiredArgsConstructor
@@ -17,68 +20,78 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepo;
     private final BCryptPasswordEncoder passwordEncoder;
 
+    private static final String UPLOAD_DIR = "C:/uploads/";
+
     @Override
     public ProfileResponse getProfile(Long userId) {
-        log.info("===== GET PROFILE =====");
-        log.info("UserID requested: {}", userId);
 
-        User user = userRepo.findById(userId).orElseThrow(() -> {
-            log.warn("User with ID {} not found", userId);
-            return new RuntimeException("User not found");
-        });
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String image = user.getProfileImage();
-        log.info("Raw profileImage from DB: {}", image);
-
         if (image != null && !image.isBlank()) {
             image = "http://10.0.2.2:8080/uploads/" + image;
-            log.info("Full URL profileImage: {}", image);
-        } else {
-            log.info("User has no profileImage");
         }
 
-        ProfileResponse response = ProfileResponse.builder()
+        return ProfileResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .profileImage(image)
                 .build();
-
-        log.info("ProfileResponse prepared: {}", response);
-        log.info("=======================");
-        return response;
     }
 
     @Override
     public boolean updateProfile(Long id, String newUsername, String newImage) {
 
-        User user = userRepo.findById(id).orElseThrow(() -> {
-            return new RuntimeException("User not found");
-        });
+        User user = userRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         boolean updated = false;
 
         if (newUsername != null && !newUsername.isBlank()) {
             user.setUsername(newUsername);
             updated = true;
-        } else {
-            log.info("Username not changed");
         }
 
         if (newImage != null && !newImage.isBlank()) {
             user.setProfileImage(newImage);
             updated = true;
-        } else {
-            log.info("ProfileImage not changed");
         }
 
         if (updated) {
             userRepo.save(user);
-            log.info("User updated successfully");
-        } else {
-            log.info("Nothing to update");
         }
+
         return true;
+    }
+
+    @Override
+    public boolean updateProfileWithImage(Long id, String username, MultipartFile image) {
+
+        String imageName = null;
+
+        if (image != null && !image.isEmpty()) {
+
+            if (!image.getContentType().startsWith("image/")) {
+                throw new RuntimeException("File upload không phải ảnh");
+            }
+
+            File dir = new File(UPLOAD_DIR);
+            if (!dir.exists()) dir.mkdirs();
+
+            String original = image.getOriginalFilename();
+            String ext = original.substring(original.lastIndexOf("."));
+            imageName = "user_" + id + "_" + System.currentTimeMillis() + ext;
+
+            try {
+                image.transferTo(new File(UPLOAD_DIR + imageName));
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi khi lưu ảnh");
+            }
+        }
+
+        return updateProfile(id, username, imageName);
     }
 
     @Override

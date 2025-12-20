@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "play_history",
         indexes = {
-                @Index(name = "idx_user_song", columnList = "user_id, song_id"), // Thay content_id bằng song_id
+                @Index(name = "idx_user_song", columnList = "user_id, song_id"),
                 @Index(name = "idx_song_played_at", columnList = "song_id, played_at"),
                 @Index(name = "idx_played_at", columnList = "played_at")
         }
@@ -25,10 +25,9 @@ public class PlayHistory {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Thay thế content bằng song
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "song_id", nullable = false)
-    private Song song; // Thay vì Content
+    private Song song;
 
     @Column(name = "played_at", nullable = false)
     private LocalDateTime playedAt;

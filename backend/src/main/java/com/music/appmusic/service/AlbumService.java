@@ -19,9 +19,9 @@ public class AlbumService {
     public Album getAlbumWithSongs(Long id) {
         Album album = albumRepository.findById(id).orElse(null);
         if (album != null) {
-            album.getArtist(); // force load artist
+            album.getArtist();
             if (album.getSongs() != null) {
-                album.getSongs().size(); // force load songs
+                album.getSongs().size();
             }
         }
         return album;

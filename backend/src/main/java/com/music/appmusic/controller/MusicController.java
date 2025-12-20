@@ -18,7 +18,7 @@ public class MusicController {
     private SongService songService;
 
     @GetMapping("/trending")
-    public ResponseEntity<List<SongResponse>> getTrendingSongs() { // ← ĐỔI KIỂU
+    public ResponseEntity<List<SongResponse>> getTrendingSongs() {
         return ResponseEntity.ok(songService.getTrendingSongs());
     }
 

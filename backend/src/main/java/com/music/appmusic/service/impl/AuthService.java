@@ -21,9 +21,9 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender; // 👈 Thêm dependency này
+    private final JavaMailSender mailSender;
 
-    // Lưu trữ OTP tạm thời (trong production nên dùng Redis)
+    // Lưu trữ OTP tạm thời
     private final ConcurrentHashMap<String, String> otpStore = new ConcurrentHashMap<>();
 
     // =============== ĐĂNG KÝ ===============
@@ -87,7 +87,7 @@ public class AuthService {
         try {
             sendOtpEmail(email, otp);
         } catch (MessagingException e) {
-            otpStore.remove(email); // rollback
+            otpStore.remove(email);
             throw new RuntimeException("Không thể gửi email OTP. Vui lòng thử lại.");
         }
 
@@ -100,7 +100,7 @@ public class AuthService {
         if (storedOtp == null || !storedOtp.equals(otp)) {
             return false;
         }
-        otpStore.remove(email); // Xóa sau khi dùng
+        otpStore.remove(email);
         return true;
     }
 
@@ -118,7 +118,7 @@ public class AuthService {
                         "<p>Mã này có hiệu lực trong 5 phút.</p>" +
                         "<p>Nếu bạn không thực hiện thao tác này, vui lòng bỏ qua email.</p>" +
                         "<br><p>Trân trọng,<br>Đội ngũ AppMusic</p>",
-                true // HTML
+                true
         );
 
         mailSender.send(message);
@@ -130,11 +130,9 @@ public class AuthService {
             throw new RuntimeException("Không tìm thấy tài khoản với email này.");
         }
 
-        // Mã hóa mật khẩu mới
         String encodedPassword = passwordEncoder.encode(newPassword);
         user.setPassword(encodedPassword);
 
-        // Lưu vào DB
         userRepository.save(user);
     }
 }

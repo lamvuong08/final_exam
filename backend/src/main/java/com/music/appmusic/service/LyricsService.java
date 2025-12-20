@@ -26,7 +26,7 @@ public class LyricsService {
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new RuntimeException("Song not found"));
 
-        String fileName = song.getLyrics(); // anti_hero.lrc
+        String fileName = song.getLyrics();
 
         if (fileName == null || fileName.isBlank()) {
             return null;

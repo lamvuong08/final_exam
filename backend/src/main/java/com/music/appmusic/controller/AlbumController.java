@@ -15,8 +15,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlbumController {
 
-    private final SongService songService; // song endpoints
-    private final AlbumService albumService; // follow/check endpoints
+    private final SongService songService;
+    private final AlbumService albumService;
 
     @GetMapping("/albums/{albumId}/songs")
     public ResponseEntity<List<SongResponse>> getSongsByAlbum(@PathVariable Long albumId) {

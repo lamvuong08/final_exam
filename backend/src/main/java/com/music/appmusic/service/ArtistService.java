@@ -19,7 +19,7 @@ public class ArtistService {
     public Artist getArtistWithSongs(Long id) {
         Artist artist = artistRepository.findById(id).orElse(null);
         if (artist != null && artist.getSongs() != null) {
-            artist.getSongs().size(); // force load songs
+            artist.getSongs().size();
         }
         return artist;
     }

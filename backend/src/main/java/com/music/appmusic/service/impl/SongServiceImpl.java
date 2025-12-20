@@ -2,8 +2,6 @@ package com.music.appmusic.service.impl;
 
 import com.music.appmusic.dto.ArtistDTO;
 import com.music.appmusic.dto.SongResponse;
-import com.music.appmusic.entity.Content;
-import com.music.appmusic.entity.PlayHistory;
 import com.music.appmusic.entity.Song;
 import com.music.appmusic.entity.User;
 import com.music.appmusic.repository.*;
@@ -11,8 +9,6 @@ import com.music.appmusic.service.SongService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,7 +26,6 @@ public class SongServiceImpl implements SongService {
     @Autowired
     private PlayHistoryRepository playHistoryRepository;
 
-    // --- Các phương thức cũ ---
     @Override
     public List<SongResponse> getTrendingSongs() {
         return songRepository.findTop5Trending().stream()

@@ -17,7 +17,7 @@ public class MediaType {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String name; // SONG, PODCAST, AUDIOBOOK, STORY, etc.
+    private String name;
 
     private String description;
 

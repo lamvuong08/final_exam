@@ -25,16 +25,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> loadProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
 
-    final api = ApiService();
-    final profile = await api.fetchProfile(userId!);
+      if (userId == null) {
+        throw Exception("UserId is null");
+      }
 
-    setState(() {
-      user = profile;
-      loading = false;
-    });
+      final api = ApiService();
+      final profile = await api.fetchProfile(userId);
+
+      if (!mounted) return;
+
+      setState(() {
+        user = profile;
+      });
+    } catch (e) {
+      debugPrint("❌ Load profile error: $e");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Không tải được thông tin người dùng")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
+    }
   }
 
   Future<void> changeName() async {

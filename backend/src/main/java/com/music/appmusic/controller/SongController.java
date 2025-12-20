@@ -40,7 +40,6 @@ public class SongController {
         return ResponseEntity.ok(songs);
     }
 
-    // --- Các endpoint cũ ---
     @GetMapping("/trending")
     public ResponseEntity<List<SongResponse>> getTrendingSongs() {
         List<SongResponse> songs = songService.getTrendingSongs();

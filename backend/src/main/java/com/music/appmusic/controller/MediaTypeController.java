@@ -5,8 +5,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
